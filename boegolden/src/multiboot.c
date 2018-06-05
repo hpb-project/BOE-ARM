@@ -6,14 +6,10 @@
  */
 
 #include <stdio.h>
-#include "platform.h"
 #include "xplatform_info.h"
-#include "xil_printf.h"
 #include "xil_io.h"
-#include "xparameters.h"
 #include "xil_types.h"
 #include "multiboot.h"
-#include "sleep.h"
 
 
 #define CSU_BASEADDR      		0XFFCA0000U
@@ -61,7 +57,7 @@ void GoMultiBoot(u32 MultiBootValue)
 
 	/* wait here until reset happens */
 	while(1) {
-	;
+		;
 	}
 
 

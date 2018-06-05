@@ -46,20 +46,7 @@ modules.builtin
 !.mailmap
 !.project
 !.cproject
-
-#
-# Generated include files
-#
-include/config
-include/linux/version.h
-include/generated
-
-# stgit generated dirs
-patches-*
-
-# quilt's files
-patches
-series
+!.sdkproject
 
 # cscope files
 cscope.*
