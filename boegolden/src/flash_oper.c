@@ -315,7 +315,8 @@ static FlashInfo gFlash_Config_Table[28] = {
 
 static u32 gFlashMake;
 static u32 gFCTIndex;	/* Flash configuration table index */
-
+static u8  gInit = 0;
+static int FlashWriteInpage(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr);
 
 /*
  * The instances to support the device drivers are global such that they
@@ -668,7 +669,7 @@ int FlashReadID(XQspiPsu *QspiPsuPtr, u8 *ReadBfrPtr)
 * @note		None.
 *
 ******************************************************************************/
-int FlashWrite(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr)
+static int FlashWriteInpage(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr)
 {
 	u8 WriteEnableCmd;
 	u8 ReadStatusCmd;
@@ -784,6 +785,54 @@ int FlashWrite(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr
 	}
 
 	return 0;
+}
+
+/*****************************************************************************/
+/**
+*
+* This function writes to the  serial Flash connected to the QSPIPSU interface.
+* All the data put into the buffer not be limited in the same page of the device,
+*
+* @param	QspiPsuPtr is a pointer to the QSPIPSU driver component to use.
+* @param	Address contains the address to write data to in the Flash.
+* @param	ByteCount contains the number of bytes to write.
+* @param	Pointer to the write buffer (which is to be transmitted)
+*
+* @return	XST_SUCCESS if successful, else XST_FAILURE.
+*
+* @note		None.
+*
+******************************************************************************/
+int FlashWrite(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr)
+{
+	u32 page_els = 0; // page empty bytes.
+	u32 page_size = (gFlash_Config_Table[gFCTIndex]).PageSize;
+	u32 write_len = 0;
+	int Status;
+#if 0 // overflow check.
+	if((Address + ByteCount) > (gFlash_Config_Table[gFCTIndex]).FlashDeviceSize)
+	{
+		xil_printf("Overflow the flash size.\n");
+		return XST_FAILURE;
+	}
+#endif
+	while(ByteCount > 0)
+	{
+		page_els = page_size - Address%page_size;
+		write_len = ByteCount>page_els ? page_els : ByteCount;    	//选择较小的作为本次写入的数据字节长度
+		//printf("Write %d bytes to 0x%08x, wait to write %dbytes.\n", write_len, Address, ByteCount - write_len);
+		Status = FlashWriteInpage(QspiPsuPtr,Address,write_len, WriteBfrPtr);
+		//printf("write finished.\n");
+		if(Status != XST_SUCCESS)
+		{
+			break;
+		}
+		//改变相应参数
+		ByteCount = ByteCount - write_len;            						//减少写入数量
+		WriteBfrPtr = WriteBfrPtr + write_len;              				//增加写入缓冲地址
+		Address = Address + write_len;                              		//增加FLASH写入的地址
+	}
+	return Status;
 }
 
 /*****************************************************************************/

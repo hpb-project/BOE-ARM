@@ -56,6 +56,8 @@
 #include "xqspipsu.h"
 #include "multiboot.h"
 #include "sleep.h"
+#include "flash_oper.h"
+#include "env.h"
 
 
 
@@ -66,9 +68,9 @@ void test_flash(void)
     int byteCnt = 0x10;
     u8 defData = 0x1C;
     u32 test_addr = 0x80000;
-    u32 maxdata = 0x80000;
-#if 0 // block test.
-    u8 filldata = 0xac;
+    u32 maxdata = 0x800;
+#if 0 // page test.
+    u8 filldata = 0xab;
     u8 wbfr[256] = {0};
     u8 rbfr[256] = {0};
     memset(wbfr, filldata, sizeof(wbfr));
@@ -104,12 +106,49 @@ void test_flash(void)
 		}
 	}
 #endif
-#if 1 // byte test.
+#if 1 // block test.
+    u8 filldata = 0xab;
+    u8 wbfr[1500] = {0};
+    u8 rbfr[1500] = {0};
+    memset(wbfr, filldata, sizeof(wbfr));
+    XQspiPsu *QspiPsuInstancePtr = &QspiPsuInstance;
+	Status = FlashInit(&QspiPsuInstance, 0);
+	if (Status != XST_SUCCESS) {
+		xil_printf("Flash Init failed.\r\n");
+        return ;
+	}
+	Status = FlashErase(&QspiPsuInstance, test_addr, maxdata);
+	if (Status != XST_SUCCESS) {
+		return ;
+	}
+	Status = FlashWrite(&QspiPsuInstance, test_addr, sizeof(wbfr), wbfr);
+	if(Status != XST_SUCCESS)
+	{
+		printf("Flash write failed.\n");
+		return;
+	}
+	Status = FlashRead(QspiPsuInstancePtr, test_addr, sizeof(rbfr), rbfr);
+	if(Status != XST_SUCCESS)
+	{
+		printf("Flash read failed.\n");
+		return;
+	}
+	if(memcmp(rbfr, wbfr, sizeof(rbfr)) == 0) {
+		printf("Flash Write and Read 256 success.\n");
+	}else {
+		printf("Flash Write and Read 256 failed.\n");
+
+	}
+	for(int i = 0; i < sizeof(rbfr); i++) {
+		printf("read[%d]=0x%02x, write[%d]=0x%02x.\n", i, rbfr[i], i, wbfr[i]);
+	}
+#endif
+#if 0 // test bytes.
 	int i = 0;
 	XQspiPsu *QspiPsuInstancePtr = &QspiPsuInstance;
 	Status = FlashInit(&QspiPsuInstance, 0);
 	if (Status != XST_SUCCESS) {
-		xil_printf("Flash Init failed.\r\n");
+		xil_printf("Flash Init failed.\n");
 		return ;
 	}
 	Status = FlashErase(&QspiPsuInstance, test_addr, maxdata);
@@ -144,17 +183,51 @@ void test_flash(void)
 #endif
 }
 
+void test_env(void)
+{
+	EnvContent env;
+	int status = env_init();
+	if(status != XST_SUCCESS){
+		printf("env init failed.\n");
+		return;
+	}
+	for(int i = 0 ; i < 1000; i++){
+		status = env_get(&env);
+		if(status != XST_SUCCESS){
+			printf("%d, env get failed\n", i);
+			return;
+		}
+		if(i != 0){
+			printf("get boeid = %d.\n", env.boeid);
+			if(env.boeid != i){
+				printf("get boeid failed, id=%d,should = %d.\n", env.boeid, i);
+				return;
+			}
+		}
+		env.boeid = i+1;
+		status = env_update(&env);
+		if(status != XST_SUCCESS){
+			printf("%d, env update failed\n", i);
+			return;
+		}
+	}
+}
+
+void runtest()
+{
+    // test multiboot
+    //GoMultiBoot(0x40000/0x8000);
+    //test_flash();
+    test_env();
+}
+
 int main()
 {
     init_platform();
-#if 0
-    // test code.
-    print("Then will multiboot to image2, 0x40000.\n\r");
-    sleep(2);
 
-    GoMultiBoot(0x40000/0x8000);
-#endif
-    test_flash();
+    runtest();
+
+
 
     cleanup_platform();
     return 0;
