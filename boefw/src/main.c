@@ -47,14 +47,52 @@
 
 #include <stdio.h>
 #include "platform.h"
+#include "xplatform_info.h"
 #include "xil_printf.h"
+#include "xil_io.h"
+#include "xparameters.h"
+#include "xil_types.h"
+#include "xstatus.h"
+#include "xqspipsu.h"
+#include "multiboot.h"
+#include "sleep.h"
+#include "flash_map.h"
+#include "env.h"
 
+static void doMultiBoot()
+{
+    int status = 0;
+    status = env_init();
+    if(status != XST_SUCCESS){
+        printf("env_init failed.\n");
+        return -1;
+    }
+    EnvContent env;
+    status = env_get(&env);
+    if(status != XST_SUCCESS) {
+        printf("env_get failed.\n");
+        return -1;
+    }
+    FPartation fp1, fp2;
+    FM_GetPartation(FM_IMAGE1_PNAME, &fp1);
+    FM_GetPartation(FM_IMAGE2_PNAME, &fp2);
+    if(env.bootaddr != fp1.pAddr && env.bootaddr != fp2.pAddr){
+    	env.bootaddr = fp1.pAddr;
+        env_update(&env);
+        GoMultiBoot(fp1.pAddr/0x8000);
+    }
+    GoMultiBoot(env.bootaddr/0x8000);
+}
 
 int main()
 {
-    init_platform();
 
-    print("Enter Fireware\n\r");
+    init_platform();
+    doMultiBoot();
+
+    //extern void runtest();
+    //runtest();
+
 
     cleanup_platform();
     return 0;
