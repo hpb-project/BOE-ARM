@@ -45,6 +45,8 @@ static void doMultiBoot()
     FM_GetPartation(FM_IMAGE1_PNAME, &fp1);
     FM_GetPartation(FM_IMAGE2_PNAME, &fp2);
     if(env.bootaddr != fp1.pAddr && env.bootaddr != fp2.pAddr){
+    	env.bootaddr = fp1.pAddr;
+        env_update(&env);
         GoMultiBoot(fp1.pAddr/0x8000);
     }
     GoMultiBoot(env.bootaddr/0x8000);

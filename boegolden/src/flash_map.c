@@ -10,18 +10,19 @@
 #include "xstatus.h"
 #include "compiler.h"
 
+#define TEST_HPB
 #ifdef TEST_HPB
 #define FLASH_BASEADDR 	(0)
 #define FLASH_SIZE     	(0x1000000)    // 16MB
 #define FLASH_END 		(FLASH_BASEADDR + FLASH_SIZE)
 #define GOLDEN_OFFSET 	(FLASH_BASEADDR)
-#define GOLDEN_SIZE   	(0x200000)		// 2MB
+#define GOLDEN_SIZE   	(0x500000)		// 2MB
 #define ENV_OFFSET		(GOLDEN_OFFSET + GOLDEN_SIZE)
 #define ENV_SIZE		(0x100000)		// 1MB
 #define IMAGE_1_OFFSET  (ENV_OFFSET + ENV_SIZE)
-#define IMAGE_1_SIZE    (0x400000)		// 4MB
+#define IMAGE_1_SIZE    (0x200000)		// 4MB
 #define IMAGE_2_OFFSET  (IMAGE_1_OFFSET + IMAGE_1_SIZE)
-#define IMAGE_2_SIZE    (0x400000)		// 4MB
+#define IMAGE_2_SIZE    (0x200000)		// 4MB
 #define FLASH_USE_END   (IMAGE_2_OFFSET+IMAGE_2_SIZE)
 
 #else  // test boe
