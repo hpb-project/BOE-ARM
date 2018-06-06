@@ -8,6 +8,7 @@
  */
 #include "flash_map.h"
 #include "xstatus.h"
+#include "compiler.h"
 
 #ifdef TEST_HPB
 #define FLASH_BASEADDR 	(0)
@@ -39,35 +40,47 @@
 #endif
 
 static FPartation gDefPartationList[] = {
-		{0, FM_GOLDEN_PNAME, GOLDEN_OFFSET, GOLDEN_SIZE},
-		{1, FM_ENV_PNAME, ENV_OFFSET, ENV_SIZE},
-		{2, FM_IMAGE1_PNAME, IMAGE_1_OFFSET, IMAGE_1_SIZE},
-		{3, FM_IMAGE2_PNAME, IMAGE_2_OFFSET, IMAGE_2_SIZE},
+    {0, FM_GOLDEN_PNAME, GOLDEN_OFFSET, GOLDEN_SIZE},
+    {1, FM_ENV_PNAME, ENV_OFFSET, ENV_SIZE},
+    {2, FM_IMAGE1_PNAME, IMAGE_1_OFFSET, IMAGE_1_SIZE},
+    {3, FM_IMAGE2_PNAME, IMAGE_2_OFFSET, IMAGE_2_SIZE},
 };
 
 
 int FM_GetPartation(char *pName, FPartation *partation)
 {
-	int i = 0;
-	for(i = 0; i < sizeof(gDefPartationList)/sizeof(FPartation); i++)
-	{
-		FPartation *fp = &(gDefPartationList[i]);
-		if(strcmp(fp->pName, pName) == 0){
-			memcpy(partation, fp, sizeof(FPartation));
-			return XST_SUCCESS;
-		}
-	}
-	return XST_FAILURE;
+    int i = 0;
+    for(i = 0; i < sizeof(gDefPartationList)/sizeof(FPartation); i++)
+    {
+        FPartation *fp = &(gDefPartationList[i]);
+        if(strcmp(fp->pName, pName) == 0){
+            memcpy(partation, fp, sizeof(FPartation));
+            return XST_SUCCESS;
+        }
+    }
+    return XST_FAILURE;
 }
 
 int FM_RemovePartation(char *pName)
 {
-	return XST_FAILURE;
+    return XST_FAILURE;
 }
 
 int FM_AddPartation(FPartation *nPartation)
 {
-	return XST_FAILURE;
+    return XST_FAILURE;
+}
+
+static void buildCheck()
+{
+    BUILD_CHECK_SIZE_ALIGN(GOLDEN_OFFSET,0x8000);   // 32KB align
+    BUILD_CHECK_SIZE_ALIGN(GOLDEN_SIZE,0x1000);		// 4KB align
+    BUILD_CHECK_SIZE_ALIGN(ENV_OFFSET,0x1000);
+    BUILD_CHECK_SIZE_ALIGN(ENV_SIZE,0x1000);
+    BUILD_CHECK_SIZE_ALIGN(IMAGE_1_OFFSET,0x8000);
+    BUILD_CHECK_SIZE_ALIGN(IMAGE_1_SIZE,0x1000);
+    BUILD_CHECK_SIZE_ALIGN(IMAGE_2_OFFSET,0x8000);
+    BUILD_CHECK_SIZE_ALIGN(IMAGE_2_SIZE,0x1000);
 }
 
 

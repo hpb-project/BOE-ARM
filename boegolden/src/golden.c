@@ -1,35 +1,3 @@
-/******************************************************************************
-*
-* Copyright (C) 2009 - 2014 Xilinx, Inc.  All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in
-* all copies or substantial portions of the Software.
-*
-* Use of the Software is limited solely to applications:
-* (a) running on a Xilinx device, or
-* (b) that interact with a Xilinx device through a bus or interconnect.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-* XILINX  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
-* OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*
-* Except as contained in this notice, the name of the Xilinx shall not be used
-* in advertising or otherwise to promote the sale, use or other dealings in
-* this Software without prior written authorization from Xilinx.
-*
-******************************************************************************/
-
 /*
  * golden.c: jump boot image.
  *
@@ -56,177 +24,40 @@
 #include "xqspipsu.h"
 #include "multiboot.h"
 #include "sleep.h"
-#include "flash_oper.h"
+#include "flash_map.h"
 #include "env.h"
 
-
-
-void test_flash(void)
+static void doMultiBoot()
 {
-	static XQspiPsu QspiPsuInstance;
-    int Status;
-    int byteCnt = 0x10;
-    u8 defData = 0x1C;
-    u32 test_addr = 0x80000;
-    u32 maxdata = 0x800;
-#if 0 // page test.
-    u8 filldata = 0xab;
-    u8 wbfr[256] = {0};
-    u8 rbfr[256] = {0};
-    memset(wbfr, filldata, sizeof(wbfr));
-    XQspiPsu *QspiPsuInstancePtr = &QspiPsuInstance;
-	Status = FlashInit(&QspiPsuInstance, 0);
-	u8 CmdBfr[8] = {0};
-	if (Status != XST_SUCCESS) {
-		xil_printf("Flash Init failed.\r\n");
-        return ;
-	}
-	Status = FlashErase(&QspiPsuInstance, test_addr, maxdata);
-	if (Status != XST_SUCCESS) {
-		return ;
-	}
-	Status = FlashWrite(&QspiPsuInstance, test_addr, sizeof(wbfr), wbfr);
-	if(Status != XST_SUCCESS)
-	{
-		printf("Flash write failed.\n");
-		return;
-	}
-	Status = FlashRead(QspiPsuInstancePtr, test_addr, sizeof(rbfr), rbfr);
-	if(Status != XST_SUCCESS)
-	{
-		printf("Flash read failed.\n");
-		return;
-	}
-	if(memcmp(rbfr, wbfr, sizeof(rbfr)) == 0) {
-		printf("Flash Write and Read 256 success.\n");
-	}else {
-		printf("Flash Write and Read 256 failed.\n");
-		for(int i = 0; i < sizeof(rbfr); i++) {
-			printf("read[%d]=0x%02x, write[%d]=0x%02x.\n", i, rbfr[i], i, wbfr[i]);
-		}
-	}
-#endif
-#if 1 // block test.
-    u8 filldata = 0xab;
-    u8 wbfr[1500] = {0};
-    u8 rbfr[1500] = {0};
-    memset(wbfr, filldata, sizeof(wbfr));
-    XQspiPsu *QspiPsuInstancePtr = &QspiPsuInstance;
-	Status = FlashInit(&QspiPsuInstance, 0);
-	if (Status != XST_SUCCESS) {
-		xil_printf("Flash Init failed.\r\n");
-        return ;
-	}
-	Status = FlashErase(&QspiPsuInstance, test_addr, maxdata);
-	if (Status != XST_SUCCESS) {
-		return ;
-	}
-	Status = FlashWrite(&QspiPsuInstance, test_addr, sizeof(wbfr), wbfr);
-	if(Status != XST_SUCCESS)
-	{
-		printf("Flash write failed.\n");
-		return;
-	}
-	Status = FlashRead(QspiPsuInstancePtr, test_addr, sizeof(rbfr), rbfr);
-	if(Status != XST_SUCCESS)
-	{
-		printf("Flash read failed.\n");
-		return;
-	}
-	if(memcmp(rbfr, wbfr, sizeof(rbfr)) == 0) {
-		printf("Flash Write and Read 256 success.\n");
-	}else {
-		printf("Flash Write and Read 256 failed.\n");
-
-	}
-	for(int i = 0; i < sizeof(rbfr); i++) {
-		printf("read[%d]=0x%02x, write[%d]=0x%02x.\n", i, rbfr[i], i, wbfr[i]);
-	}
-#endif
-#if 0 // test bytes.
-	int i = 0;
-	XQspiPsu *QspiPsuInstancePtr = &QspiPsuInstance;
-	Status = FlashInit(&QspiPsuInstance, 0);
-	if (Status != XST_SUCCESS) {
-		xil_printf("Flash Init failed.\n");
-		return ;
-	}
-	Status = FlashErase(&QspiPsuInstance, test_addr, maxdata);
-	if (Status != XST_SUCCESS) {
-		return ;
-	}
-	for(i = 0; i < maxdata; i++)
-	{
-		u8 wdata = (i+1)%0xFF;
-		Status = FlashWrite(&QspiPsuInstance, test_addr+i, 1, &wdata);
-		if(Status != XST_SUCCESS)
-		{
-			printf("Flash write %d failed.\n", i);
-			return;
-		}
-	}
-	for(i = 0; i < maxdata; i++){
-		u8 rdata = 0;
-		u8 wdata = (i+1)%0xFF;
-		Status = FlashRead(&QspiPsuInstance, test_addr + i, 1, &rdata);
-		if(Status != XST_SUCCESS)
-		{
-			printf("Flash read %d failed.\n", i);
-			return;
-		}
-		if(rdata != wdata){
-			printf("Flash read(0x%02x) != (0x%02x).\n", rdata, wdata);
-		}else {
-			printf("Write and Read data [0x%02x].\n", rdata);
-		}
-	}
-#endif
-}
-
-void test_env(void)
-{
-	EnvContent env;
-	int status = env_init();
-	if(status != XST_SUCCESS){
-		printf("env init failed.\n");
-		return;
-	}
-	for(int i = 0 ; i < 1000; i++){
-		status = env_get(&env);
-		if(status != XST_SUCCESS){
-			printf("%d, env get failed\n", i);
-			return;
-		}
-		if(i != 0){
-			printf("get boeid = %d.\n", env.boeid);
-			if(env.boeid != i){
-				printf("get boeid failed, id=%d,should = %d.\n", env.boeid, i);
-				return;
-			}
-		}
-		env.boeid = i+1;
-		status = env_update(&env);
-		if(status != XST_SUCCESS){
-			printf("%d, env update failed\n", i);
-			return;
-		}
-	}
-}
-
-void runtest()
-{
-    // test multiboot
-    //GoMultiBoot(0x40000/0x8000);
-    //test_flash();
-    test_env();
+    int status = 0;
+    status = env_init();
+    if(status != XST_SUCCESS){
+        printf("env_init failed.\n");
+        return -1;
+    }
+    EnvContent env;
+    status = env_get(&env);
+    if(status != XST_SUCCESS) {
+        printf("env_get failed.\n");
+        return -1;
+    }
+    FPartation fp1, fp2;
+    FM_GetPartation(FM_IMAGE1_PNAME, &fp1);
+    FM_GetPartation(FM_IMAGE2_PNAME, &fp2);
+    if(env.bootaddr != fp1.pAddr && env.bootaddr != fp2.pAddr){
+        GoMultiBoot(fp1.pAddr/0x8000);
+    }
+    GoMultiBoot(env.bootaddr/0x8000);
 }
 
 int main()
 {
+
     init_platform();
+    doMultiBoot();
 
-    runtest();
-
+    //extern void runtest();
+    //runtest();
 
 
     cleanup_platform();
