@@ -51,47 +51,91 @@
 #include "xil_printf.h"
 #include "xil_io.h"
 #include "xparameters.h"
-#include "xil_types.h"
-#include "xstatus.h"
-#include "xqspipsu.h"
-#include "multiboot.h"
-#include "sleep.h"
-#include "flash_map.h"
-#include "env.h"
+#include "common.h"
 
-static void doMultiBoot()
+/*
+ * Firmware main work
+ * 1. upgrade
+ * 2. set boeid
+ * 3. set bindid
+ * 4. set bindaccount
+ * 5. generate random
+ * 6. hwsign.
+ *
+ *
+ * N. some function not support when not bindid or bindaccount or checkbind error.
+
+ */
+/*
+ * Tmp variable.
+ */
+typedef enum UPGRADE_FLAG {
+	UPGRADE_NONE = 0,
+	UPGRADE_REBOOT = 6,
+}UPGRADE_FLAG;
+extern GlobalHandle gHandle;
+
+
+
+int mainloop(void)
 {
-    int status = 0;
-    status = env_init();
-    if(status != XST_SUCCESS){
-        printf("env_init failed.\n");
-        return -1;
-    }
-    EnvContent env;
-    status = env_get(&env);
-    if(status != XST_SUCCESS) {
-        printf("env_get failed.\n");
-        return -1;
-    }
-    FPartation fp1, fp2;
-    FM_GetPartation(FM_IMAGE1_PNAME, &fp1);
-    FM_GetPartation(FM_IMAGE2_PNAME, &fp2);
-    if(env.bootaddr != fp1.pAddr && env.bootaddr != fp2.pAddr){
-    	env.bootaddr = fp1.pAddr;
-        env_update(&env);
-        GoMultiBoot(fp1.pAddr/0x8000);
-    }
-    GoMultiBoot(env.bootaddr/0x8000);
+	while(gHandle.bRun){
+		A_Package *pack = NULL;
+		u32 timeout_ms = 2;
+		if(0 != msg_pool_fetch(&gHandle.gMsgPoolIns, &pack, timeout_ms)) {//have no msg.
+			// have no msg.
+		}else {
+			ACmd cmd = pack->header.acmd;
+			switch(cmd){
+			default :
+				xil_printf("Get cmd %d.\n\r", cmd);
+				break;
+			}
+		}
+
+	}
+
 }
 
 int main()
 {
-
+	int status = 0;
     init_platform();
-    doMultiBoot();
+    // 1. some init.
+    status = FlashInit(&gHandle.gFlashInstance, 0);
+    if(status != XST_SUCCESS){
+    	xil_printf("FlashInit failed.\n\r");
+    	return -1;
+    }
+    status = env_init();
+    if(status != XST_SUCCESS){
+		xil_printf("Env init failed.\n\r");
+		return -1;
+	}
+    status = env_get(&gHandle.gEnv);
+    if(status != XST_SUCCESS){
+		xil_printf("env get failed.\n\r");
+		return -1;
+	}
+    status = msg_pool_init(&gHandle.gMsgPoolIns);
+    if(status != XST_SUCCESS){
+		xil_printf("fifo init failed.\n\r");
+		return -1;
+	}
 
-    //extern void runtest();
-    //runtest();
+    if(gHandle.gEnv.update_flag == UPGRADE_REBOOT){
+		// Now is reboot from upgrade, so upgrade successful.
+		// Todo response upgrade success.
+    	A_Package *pack = apackage_new(200);
+		gHandle.gEnv.update_flag = UPGRADE_NONE;
+		env_update(&gHandle.gEnv);
+		msg_pool_txsend(&gHandle.gMsgPoolIns, pack, 200);
+		apackage_free(pack);
+	}
+    xil_printf("Welcome to HPB.\n\r");
+
+    mainloop();
+
 
 
     cleanup_platform();
