@@ -470,7 +470,7 @@ int GetFlashInfo(XQspiPsu *QspiPsuPtr, FlashInfo *info)
 int FlashReadID(XQspiPsu *QspiPsuPtr, u8 *ReadBfrPtr)
 {
 	int Status;
-	int StartIndex;
+	int StartIndex = 0;
     u8 ReadIdCmd;
 
 	/*
@@ -1520,7 +1520,7 @@ int DieErase(XQspiPsu *QspiPsuPtr, u8 *CmdBfrPtr)
 ******************************************************************************/
 u32 GetRealAddr(XQspiPsu *QspiPsuPtr, u32 Address)
 {
-	u32 RealAddr;
+	u32 RealAddr = 0;
 
 	switch(QspiPsuPtr->Config.ConnectionMode) {
 	case XQSPIPSU_CONNECTION_MODE_SINGLE:
@@ -1565,7 +1565,7 @@ u32 GetRealAddr(XQspiPsu *QspiPsuPtr, u32 Address)
 
 	}
 
-	return(RealAddr);
+	return (RealAddr);
 }
 
 /*****************************************************************************/

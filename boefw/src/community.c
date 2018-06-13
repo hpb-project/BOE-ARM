@@ -518,8 +518,8 @@ int msg_pool_fetch(MsgPoolHandle handle, A_Package **pack, u32 timeout_ms)
 			F_Package *fp = &(mp->pool[mp->w_pos]);
 			A_Package *ap = (A_Package*)fp;
 			pack_len = ap->header.body_length + sizeof(A_Package);
-			pack = apackage_new(pack_len);
-			memcpy(pack, ap, pack_len);
+			*pack = axu_package_new(pack_len);
+			memcpy(*pack, ap, pack_len);
 			mp->r_pos = (mp->r_pos+1)%MSG_POOL_SPACE;
 			bGetMsg = 1;
 			break;

@@ -20,6 +20,7 @@
 
 
 #define PACKAGE_MAX_SIZE 	(2048)   // 2KB
+#define PACKAGE_MIN_SIZE 	(60)
 
 typedef struct A_PACKAGE_HEADER {
     uint16_t magic_aacc;
@@ -35,6 +36,25 @@ typedef struct A_PACKAGE{
     uint32_t    checksum;
     uint8_t     data[];
 }A_Package;
+
+typedef enum A_Error{
+    A_ERROR_START,
+    A_MAGIC_ERROR,
+    A_CHECKSUM_ERROR,
+    A_STA_USAGE_ERROR,
+    A_MID_UID_NOT_FOUND,
+    A_FIN_CHECKSUM_ERROR,
+    A_STA_LEN_ERROR,
+    A_MID_LEN_ERROR, // datalen + offset > totallen
+    A_UPGRADE_IS_ABORT,
+	A_UPGRADE_STATE_ERROR, // when get upgrade start command, current flag is not recv_finish.
+    A_UPGRADE_FLASH_ERASE_ERROR,
+    A_UPGRADE_FLASH_WRITE_ERROR,
+	A_UPGRADE_ENV_UPDATE_ERROR,
+    A_UPGRADE_ABORT_ERROR,
+    A_ERROR_END,
+}A_Error;
+const char *gAErrorMsg[A_ERROR_END];
 
 
 typedef enum A_CMD {
@@ -67,7 +87,19 @@ typedef enum A_CMD {
     ACMD_END                    = 0xff,
 }ACmd;
 
-A_Package* apackage_new(int len);
-int apackage_free(A_Package* pack);
+A_Package* axu_package_new(int len);
+int axu_package_free(A_Package* pack);
+
+void axu_package_init(A_Package *pack, A_Package* req, ACmd cmd);
+
+int axu_set_data(A_Package *pack, int offset, u8 *data, int len);
+
+void axu_finish_package(A_Package *pack);
+
+char *axu_get_error_msg(A_Error ecode);
+
+
+
+
 
 #endif  /*AXU_CONNECTOR_H*/

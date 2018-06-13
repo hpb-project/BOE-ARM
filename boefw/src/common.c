@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-GlobalHandle gHandle = {.bRun = 1};
+GlobalHandle gHandle = {.bRun = 1, };
 uint32_t checksum(uint8_t *data, uint32_t len)
 {
     uint32_t chk = 0;
@@ -31,4 +31,66 @@ uint32_t checksum(uint8_t *data, uint32_t len)
         }
     }
     return chk;
+}
+
+uint32_t genrandom(void)
+{
+    return (uint32_t)random();
+}
+
+BlockDataInfo *findInfo(BlockDataInfo *head, u32 uniqueId)
+{
+    BlockDataInfo *p = head;
+    while(p!=NULL){
+        if(p->uniqueId == uniqueId)
+            return p;
+        else
+            p = p->next;
+    };
+    return p;
+}
+int addInfo(BlockDataInfo *head, BlockDataInfo *nInfo)
+{
+    BlockDataInfo *p = head;
+    while(p!=NULL){
+            p = p->next;
+    };
+    p->next = nInfo;
+    return 0;
+}
+
+int removeInfo(BlockDataInfo *head, BlockDataInfo *rInfo)
+{
+    BlockDataInfo *last = head;
+    BlockDataInfo *p = NULL;
+    while(last != NULL && last->next != NULL)
+    {
+        p = last->next;
+        if(p->uniqueId == rInfo->uniqueId)
+        {
+            last->next = p->next;
+            free(p);
+            return 0;
+        }
+        last = p;
+    };
+    return 1;
+}
+
+int removeInfoByID(BlockDataInfo *head, u32 uniqueId)
+{
+    BlockDataInfo *last = head;
+    BlockDataInfo *p = NULL;
+    while(last != NULL && last->next != NULL)
+    {
+        p = last->next;
+        if(p->uniqueId == uniqueId)
+        {
+            last->next = p->next;
+            free(p);
+            return 0;
+        }
+        last = p;
+    };
+    return 1;
 }

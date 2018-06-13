@@ -10,8 +10,8 @@
 
 #include <xil_types.h>
 extern u8 gHWVersion;
-extern u8 gFWVersion;
-extern u8 gAXUVersion;
+extern u8 gBFVersion; // hardware design
+extern u8 gAXUVersion; // arm firmware
 
 
 #endif /* SRC_VERSION_H_ */

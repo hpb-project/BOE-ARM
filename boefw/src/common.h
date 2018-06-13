@@ -29,15 +29,40 @@
 #include "community.h"
 #include "axu_connector.h"
 
+
+typedef enum BlockDataUsage{
+    BD_USE_START,
+    BD_USE_UPGRADE_GOLDEN,
+    BD_USE_UPGRADE_FW,
+    BD_USE_END,
+}BlockDataUsage;
+
+typedef struct BlockDataInfo{
+    BlockDataUsage eDataUsage; // data usage.
+    u32 uniqueId;  // data unique id, used for restructure
+    u32 checksum;  // data checksum.
+    u32 dataLen;   // total length 
+    u32 flag;      // update flag or something.
+    struct BlockDataInfo *next; // link to next blockdata info.
+    u8  data[];    // act data.
+}BlockDataInfo;
+
 typedef struct GlobalHandle {
-	XQspiPsu 	gFlashInstance;
-	EnvContent 	gEnv;
-	MsgPoolHandle gMsgPoolIns;
-	u8			bRun;
+    XQspiPsu 	gFlashInstance;
+    EnvContent 	gEnv;
+    BlockDataInfo gBlockDataList;
+    MsgPoolHandle gMsgPoolIns;
+    u8			bRun;
 }GlobalHandle;
 
 extern GlobalHandle gHandle;
 
+
+BlockDataInfo *findInfo(BlockDataInfo *head, u32 uniqueId);
+int addInfo(BlockDataInfo *head, BlockDataInfo *nInfo);
+int removeInfo(BlockDataInfo *head, BlockDataInfo *rInfo);
+int removeInfoByID(BlockDataInfo *head, u32 uniqueId);
 uint32_t checksum(uint8_t *data, uint32_t len);
+uint32_t genrandom();
 
 #endif  /*COMMON_H*/
