@@ -46,6 +46,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "platform.h"
 #include "xplatform_info.h"
 #include "xil_printf.h"
@@ -53,6 +54,7 @@
 #include "xparameters.h"
 #include "doCommand.h"
 #include "common.h"
+#include "flash_oper.h"
 
 /*
  * Firmware main work
@@ -98,15 +100,16 @@ static int package_check(A_Package *pack)
     return ret;
 }
 
-
 int mainloop(void)
 {
 	A_Package *send = axu_package_new(PACKAGE_MIN_SIZE);
     char *errmsg = NULL;
+    char *msgbuf = (char*)malloc(PACKAGE_MIN_SIZE);
     int ret = 0;
     while(gHandle.bRun){
         A_Package *rcv = NULL;
         u32 timeout_ms = 2;
+        memset(msgbuf, 0, PACKAGE_MIN_SIZE);
         if(0 != msg_pool_fetch(&gHandle.gMsgPoolIns, &rcv, timeout_ms)) {
             // have no msg.
         }else {
@@ -117,7 +120,9 @@ int mainloop(void)
                 Processor *pcs = processor_get(cmd);
                 if(pcs == NULL){
                 	errmsg = axu_get_error_msg(A_UNKNOWN_CMD);
-                	make_response_error(rcv, ACMD_BP_RES_ERR, A_UNKNOWN_CMD, errmsg, strlen(errmsg), send);
+                	strcat(msgbuf, errmsg);
+                	sprintf(msgbuf+strlen(errmsg), ": command is %d.", cmd);
+                	make_response_error(rcv, ACMD_BP_RES_ERR, A_UNKNOWN_CMD, msgbuf, strlen(msgbuf), send);
                 }else{
                 	if(pcs->pre_check == NULL){
                 		pcs->do_func(rcv, send);
@@ -125,21 +130,27 @@ int mainloop(void)
                 	else if(pcs->pre_check(rcv, send) == 0){
 						pcs->do_func(rcv, send);
 					}
+                	//Todo : check send response or not.
                 }
             }else if(2 == ret){
                 // checksum error.
             	errmsg = axu_get_error_msg(A_CHECKSUM_ERROR);
-                make_response_error(rcv, ACMD_BP_RES_ERR, A_CHECKSUM_ERROR, errmsg, strlen(errmsg), send);
+            	strcat(msgbuf, errmsg);
+            	sprintf(msgbuf+strlen(errmsg), ": package body checksum not macth.");
+                make_response_error(rcv, ACMD_BP_RES_ERR, A_CHECKSUM_ERROR, msgbuf, strlen(msgbuf), send);
             }else if(1 == ret){
                 // magic error.
             	errmsg = axu_get_error_msg(A_MAGIC_ERROR);
-                make_response_error(rcv, ACMD_BP_RES_ERR, A_MAGIC_ERROR, errmsg, strlen(errmsg), send);
+            	strcat(msgbuf, errmsg);
+            	sprintf(msgbuf+strlen(errmsg), ": correct magic is 0x%x and 0x%x.", AXU_MAGIC_START, AXU_MAGIC_END);
+                make_response_error(rcv, ACMD_BP_RES_ERR, A_MAGIC_ERROR, msgbuf, strlen(msgbuf), send);
             }
             msg_pool_txsend(gHandle.gMsgPoolIns, send, PACKAGE_MIN_SIZE);
         }
         // release rcv.
         axu_package_free(rcv);
     }
+    free(msgbuf);
     return 0;
 }
 
@@ -172,12 +183,9 @@ int main()
     if(gHandle.gEnv.update_flag == UPGRADE_REBOOT){
         // Now is reboot from upgrade, so upgrade successful.
         // response upgrade success.
-        A_Package *pack = axu_package_new(PACKAGE_MIN_SIZE);
         gHandle.gEnv.update_flag = UPGRADE_NONE;
         env_update(&gHandle.gEnv);
-        make_package_progress(ACMD_BP_RES_UPGRADE_PROGRESS, 100, pack);
-        msg_pool_txsend(gHandle.gMsgPoolIns, pack, PACKAGE_MIN_SIZE);
-        axu_package_free(pack);
+        send_upgrade_progress(100, "reboot success.");
     }
 
     xil_printf("Welcome to HPB.\r\n");

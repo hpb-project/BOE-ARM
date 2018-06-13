@@ -76,11 +76,24 @@ void axu_finish_package(A_Package *pack)
 {
     pack->checksum = checksum(pack->data, pack->header.body_length);
 }
-const char *gErrMsg = {
-    NULL,
-    "Magic error",
-    "Checksum error",
-    NULL,
+const char *gErrMsg[] = {
+		NULL,
+		"unknown cmd",
+		"magic err",
+		"checksum err",
+		"env update err",
+		"usage err",
+		"uid not find",
+		"checksum_err",
+		"datalen err",
+		"datalen err",
+		"upgrade has been aborted",
+		"upgrade state err",
+		"flash erase err",
+		"flash write err",
+		"upgrade abort err",
+		"version err",
+		NULL,
 };
 char *axu_get_error_msg(A_Error ecode)
 {

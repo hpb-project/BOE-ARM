@@ -20,7 +20,10 @@
 
 
 #define PACKAGE_MAX_SIZE 	(2048)   // 2KB
-#define PACKAGE_MIN_SIZE 	(60)
+#define PACKAGE_MIN_SIZE 	(100)
+
+#define AXU_MAGIC_START (0xaacc)
+#define AXU_MAGIC_END   (0xccaa)
 
 typedef struct A_PACKAGE_HEADER {
     uint16_t magic_aacc;
@@ -53,6 +56,7 @@ typedef enum A_Error{
     A_UPGRADE_FLASH_ERASE_ERROR,
     A_UPGRADE_FLASH_WRITE_ERROR,
     A_UPGRADE_ABORT_ERROR,
+	A_VERSION_ERROR,
     A_ERROR_END,
 }A_Error;
 const char *gAErrorMsg[A_ERROR_END];

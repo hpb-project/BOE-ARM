@@ -28,10 +28,13 @@ static int make_response_random(A_Package *req, ACmd cmd, A_Package *p)
     return 0;
 }
 
-int make_package_progress(ACmd cmd, u8 progress, A_Package *p)
+int make_package_progress(ACmd cmd, u8 progress, char *msg, A_Package *p)
 {
+	int offset = 0;
     axu_package_init(p, NULL, cmd);
-    axu_set_data(p, 0, &progress, sizeof(progress));
+    axu_set_data(p, offset, &progress, sizeof(progress));
+    offset += sizeof(progress);
+    axu_set_data(p, offset, (u8*)msg, strlen(msg));
     axu_finish_package(p);
     return 0;
 }
@@ -63,6 +66,14 @@ int make_response_error(A_Package *req, ACmd cmd, u8 err_code, char*err_info, in
     return 0;
 }
 
+void send_upgrade_progress(u8 progress, char *msg)
+{
+	A_Package *pack = axu_package_new(PACKAGE_MIN_SIZE);
+	make_package_progress(ACMD_BP_RES_UPGRADE_PROGRESS, progress, msg, pack);
+	msg_pool_txsend(gHandle.gMsgPoolIns, pack, PACKAGE_MIN_SIZE);
+	axu_package_free(pack);
+}
+
 #define TRANSPORT_START_BASE            (0)
 #define TRANSPORT_START_USAGE_SIZE      (1)
 #define TRANSPORT_START_ID_SIZE         (4)
@@ -72,12 +83,33 @@ int make_response_error(A_Package *req, ACmd cmd, u8 err_code, char*err_info, in
 #define GetStartID(pack)                (*(u32*)(&(pack->data[1])))
 #define GetStartCHK(pack)               (*(u32*)(&(pack->data[1+4])))
 #define GetStartTotallen(pack)          (*(u32*)(&(pack->data[1+4+4])))
+#define GetHWVersion(pack)				(pack->data[1+4+4+4])
+#define GetFWVersion(pack)				(pack->data[1+4+4+4+1])
+#define GetAXUVersion(pack)				(pack->data[1+4+4+4+1+1])
 
+static int checkVersion(A_Package *p)
+{
+	u8 nhwVer = GetHWVersion(p);
+	u8 nbfVer = GetFWVersion(p);
+	u8 naxuVer = GetAXUVersion(p);
+	if(vMajor(nhwVer) == vMajor(gHWVersion)
+			&& vMinor(nhwVer) >= vMinor(gHWVersion))
+	{
+		if(nbfVer >= gBFVersion && naxuVer >= gAXUVersion){
+			if((nhwVer == gHWVersion) && (nbfVer == gBFVersion) && (naxuVer == gAXUVersion)){
+				return 1;
+			}
+			return 0;
+		}
+	}
+	return 1;
+}
 
 static int doTransportStart(A_Package *p, A_Package *res)
 {
     u32 fileid = 0, datalen = 0;
     char *errmsg = NULL;
+    char msgbuf[PACKAGE_MIN_SIZE] = {0};
     FPartation fp;
     fileid = GetStartID(p);
     datalen = GetStartTotallen(p);
@@ -96,6 +128,13 @@ static int doTransportStart(A_Package *p, A_Package *res)
         return 1;
     }
 
+    // check version info, then create info.
+    if(checkVersion(p) != 0){
+    	errmsg = axu_get_error_msg(A_VERSION_ERROR);
+		make_response_error(p, ACMD_BP_RES_ERR, A_VERSION_ERROR, errmsg, strlen(errmsg), res);
+		return 1;
+    }
+
     info = (BlockDataInfo*)malloc(datalen + sizeof(BlockDataInfo));
     memset(info, 0x0, datalen + sizeof(BlockDataInfo));
     info->uniqueId = fileid;
@@ -107,20 +146,25 @@ static int doTransportStart(A_Package *p, A_Package *res)
         FM_GetPartation(FM_IMAGE1_PNAME, &fp);
         if(datalen > fp.pSize){
             errmsg = axu_get_error_msg(A_STA_LEN_ERROR);
-            make_response_error(p, ACMD_BP_RES_ERR, A_STA_LEN_ERROR, errmsg, strlen(errmsg), res);
+            strcat(msgbuf, errmsg);
+            sprintf(msgbuf+strlen(errmsg), ": datalen = %d, partation size = %d.", info->dataLen, fp.pSize);
+            make_response_error(p, ACMD_BP_RES_ERR, A_STA_LEN_ERROR, msgbuf, strlen(msgbuf), res);
             return 1;
         }
     }else if(usage == BD_USE_UPGRADE_GOLDEN){
         FM_GetPartation(FM_GOLDEN_PNAME, &fp);
         if(datalen > fp.pSize){
             errmsg = axu_get_error_msg(A_STA_LEN_ERROR);
-            make_response_error(p, ACMD_BP_RES_ERR, A_STA_LEN_ERROR, errmsg, strlen(errmsg), res);
+            strcat(msgbuf, errmsg);
+			sprintf(msgbuf+strlen(errmsg), ": datalen = %d, partation size = %d.", info->dataLen, fp.pSize);
+			make_response_error(p, ACMD_BP_RES_ERR, A_STA_LEN_ERROR, msgbuf, strlen(msgbuf), res);
             return 1;
         }
     }
 
     addInfo(&gHandle.gBlockDataList, info);
     make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
+    send_upgrade_progress(5, "start transport");
 
     return 0;
 }
@@ -138,6 +182,7 @@ static int doTransportMid(A_Package *p, A_Package *res)
     u16 offset = 0;
 
     char *errmsg = NULL;
+    char msgbuf[PACKAGE_MIN_SIZE] = {0};
     fileid = GetMidID(p);
     offset = GetMidOffset(p);
     datalen = GetMidDatalen(p);
@@ -146,20 +191,32 @@ static int doTransportMid(A_Package *p, A_Package *res)
     BlockDataInfo *info = findInfo(&(gHandle.gBlockDataList), fileid);
     if(info == NULL){
         errmsg = axu_get_error_msg(A_MID_UID_NOT_FOUND);
-        make_response_error(p, ACMD_BP_RES_ERR, A_MID_UID_NOT_FOUND, errmsg, strlen(errmsg), res);
+        strcat(msgbuf, errmsg);
+		sprintf(msgbuf+strlen(errmsg), ": uid is %u.", fileid);
+        make_response_error(p, ACMD_BP_RES_ERR, A_MID_UID_NOT_FOUND, msgbuf, strlen(msgbuf), res);
         return 1;
+    }
+    if(info->flag == UPGRADE_ABORT){
+    	errmsg = axu_get_error_msg(A_UPGRADE_STATE_ERROR);
+		strcat(msgbuf, errmsg);
+		sprintf(msgbuf+strlen(errmsg), ": upgrade has been aborted.");
+		make_response_error(p, ACMD_BP_RES_ERR, A_UPGRADE_STATE_ERROR, msgbuf, strlen(msgbuf), res);
+		return 1;
     }
 
     // check datalen.
     if((offset + datalen) > info->dataLen){
         errmsg = axu_get_error_msg(A_MID_LEN_ERROR);
-        make_response_error(p, ACMD_BP_RES_ERR, A_MID_LEN_ERROR, errmsg, strlen(errmsg), res);
+        strcat(msgbuf, errmsg);
+		sprintf(msgbuf+strlen(errmsg), ": o(%d) + l(%d) > tl(%d).", offset, datalen, info->dataLen);
+        make_response_error(p, ACMD_BP_RES_ERR, A_MID_LEN_ERROR, msgbuf, strlen(msgbuf), res);
         return 1;
     }
     // restructure data.
     memcpy(&(info->data[offset]), &(p->data[TRANSPORT_MID_DATA_OFFSET]), datalen);
+    info->recLen += datalen;
     make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
-
+    send_upgrade_progress(5+(info->recLen * 75/info->dataLen), "receiving"); // max progress is 80%.
     return 0;
 }
 
@@ -175,6 +232,7 @@ static int doTransportFin(A_Package *p, A_Package *res)
     u16 offset = 0;
 
     char *errmsg = NULL;
+    char msgbuf[PACKAGE_MIN_SIZE] = {0};
     fileid = GetFinID(p);
     offset = GetFinOffset(p);
     datalen = GetFinDatalen(p);
@@ -183,27 +241,42 @@ static int doTransportFin(A_Package *p, A_Package *res)
     BlockDataInfo *info = findInfo(&(gHandle.gBlockDataList), fileid);
     if(info == NULL){
         errmsg = axu_get_error_msg(A_MID_UID_NOT_FOUND);
-        make_response_error(p, ACMD_BP_RES_ERR, A_MID_UID_NOT_FOUND, errmsg, strlen(errmsg), res);
+        strcat(msgbuf, errmsg);
+		sprintf(msgbuf+strlen(errmsg), ": uid is %u.", fileid);
+        make_response_error(p, ACMD_BP_RES_ERR, A_MID_UID_NOT_FOUND, msgbuf, strlen(msgbuf), res);
         return 1;
     }
 
     // check datalen.
     if((offset + datalen) > info->dataLen){
         errmsg = axu_get_error_msg(A_MID_LEN_ERROR);
-        make_response_error(p, ACMD_BP_RES_ERR, A_MID_LEN_ERROR, errmsg, strlen(errmsg), res);
+        strcat(msgbuf, errmsg);
+		sprintf(msgbuf+strlen(errmsg), ": o(%d) + l(%d) > tl(%d).", offset, datalen, info->dataLen);
+        make_response_error(p, ACMD_BP_RES_ERR, A_MID_LEN_ERROR, msgbuf, strlen(msgbuf), res);
         return 1;
     }
     // restructure data.
     memcpy(&(info->data[offset]), &(p->data[TRANSPORT_MID_DATA_OFFSET]), datalen);
+    info->recLen += datalen;
     u32 chk = checksum(info->data, info->dataLen);
     if(chk != info->checksum){
         errmsg = axu_get_error_msg(A_FIN_CHECKSUM_ERROR);
-        make_response_error(p, ACMD_BP_RES_ERR, A_FIN_CHECKSUM_ERROR, errmsg, strlen(errmsg), res);
+        strcat(msgbuf, errmsg);
+		sprintf(msgbuf+strlen(errmsg), ": checksum not match.");
+        make_response_error(p, ACMD_BP_RES_ERR, A_FIN_CHECKSUM_ERROR, msgbuf, strlen(msgbuf), res);
         return 1;
     }
+    if(info->flag == UPGRADE_ABORT){
+		errmsg = axu_get_error_msg(A_UPGRADE_STATE_ERROR);
+		strcat(msgbuf, errmsg);
+		sprintf(msgbuf+strlen(errmsg), ": upgrade has been aborted.");
+		make_response_error(p, ACMD_BP_RES_ERR, A_UPGRADE_STATE_ERROR, msgbuf, strlen(msgbuf), res);
+		return 1;
+	}
     info->flag = UPGRADE_RECV_FIN;
 
     make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
+    send_upgrade_progress(80, "receive finished");
     return 0;
 }
 
@@ -217,19 +290,31 @@ static int doUpgradeStart(A_Package *p, A_Package *res)
     FPartation fp_golden, fp_img1, fp_img2;
 
     char *errmsg = NULL;
+    char msgbuf[PACKAGE_MIN_SIZE] = {0};
     fileid = GetUpgradeID(p);
 
     // find info.
     BlockDataInfo *info = findInfo(&(gHandle.gBlockDataList), fileid);
     if(info == NULL){
         errmsg = axu_get_error_msg(A_MID_UID_NOT_FOUND);
-        make_response_error(p, ACMD_BP_RES_ERR, A_MID_UID_NOT_FOUND, errmsg, strlen(errmsg), res);
+        strcat(msgbuf, errmsg);
+		sprintf(msgbuf+strlen(errmsg), ": uid is %u.", fileid);
+        make_response_error(p, ACMD_BP_RES_ERR, A_MID_UID_NOT_FOUND, msgbuf, strlen(msgbuf), res);
         return 1;
     }
+    if(info->flag == UPGRADE_ABORT){
+		errmsg = axu_get_error_msg(A_UPGRADE_STATE_ERROR);
+		strcat(msgbuf, errmsg);
+		sprintf(msgbuf+strlen(errmsg), ": upgrade has been aborted.");
+		make_response_error(p, ACMD_BP_RES_ERR, A_UPGRADE_STATE_ERROR, msgbuf, strlen(msgbuf), res);
+		return 1;
+	}
 
     if(info->flag != UPGRADE_RECV_FIN){
     	errmsg = axu_get_error_msg(A_UPGRADE_STATE_ERROR);
-    	make_response_error(p, ACMD_BP_RES_ERR, A_UPGRADE_STATE_ERROR, errmsg, strlen(errmsg), res);
+    	strcat(msgbuf, errmsg);
+		sprintf(msgbuf+strlen(errmsg), ": state is %d, can't do upgrade.", info->flag);
+    	make_response_error(p, ACMD_BP_RES_ERR, A_UPGRADE_STATE_ERROR, msgbuf, strlen(msgbuf), res);
     	return 1;
     }
 
@@ -249,6 +334,14 @@ static int doUpgradeStart(A_Package *p, A_Package *res)
             writeLen = fp_img1.pSize;
         }
     }
+    if(info->flag == UPGRADE_ABORT){
+		errmsg = axu_get_error_msg(A_UPGRADE_STATE_ERROR);
+		strcat(msgbuf, errmsg);
+		sprintf(msgbuf+strlen(errmsg), ": upgrade has been aborted.");
+		make_response_error(p, ACMD_BP_RES_ERR, A_UPGRADE_STATE_ERROR, msgbuf, strlen(msgbuf), res);
+		return 1;
+	}
+    info->flag = UPGRADE_ERASEING_FLASH;
     // flash erase.
     if(0 != FlashErase(&(gHandle.gFlashInstance), upgradeAddr, writeLen)){
         xil_printf("Upgrade: flash erase error, addr:0x%x, size:0x%x.\r\n", upgradeAddr, writeLen);
@@ -256,6 +349,16 @@ static int doUpgradeStart(A_Package *p, A_Package *res)
         make_response_error(p, ACMD_BP_RES_ERR, A_UPGRADE_FLASH_ERASE_ERROR, errmsg, strlen(errmsg), res);
         return 1;
     }
+    send_upgrade_progress(88, "flash erase finished");
+    // check upgrade abort flag.
+	if(info->flag == UPGRADE_ABORT){
+		errmsg = axu_get_error_msg(A_UPGRADE_STATE_ERROR);
+		strcat(msgbuf, errmsg);
+		sprintf(msgbuf+strlen(errmsg), ": upgrade has been aborted.");
+		make_response_error(p, ACMD_BP_RES_ERR, A_UPGRADE_STATE_ERROR, msgbuf, strlen(msgbuf), res);
+		return 1;
+	}
+	info->flag = UPGRADE_WRITEING_FLASH;
     // write to flash
     if(0 != FlashWrite(&(gHandle.gFlashInstance), upgradeAddr, info->dataLen, info->data)){
         xil_printf("Upgrade: flash write error, addr:0x%x, size:0x%x.\r\n", upgradeAddr, info->data);
@@ -263,6 +366,8 @@ static int doUpgradeStart(A_Package *p, A_Package *res)
         make_response_error(p, ACMD_BP_RES_ERR, A_UPGRADE_FLASH_WRITE_ERROR, errmsg, strlen(errmsg), res);
         return 1;
     }
+    info->flag = UPGRADE_WRITE_FLASH_FIN;
+    send_upgrade_progress(95, "flash write finished");
 
     gHandle.gEnv.bootaddr = upgradeAddr;
     gHandle.gEnv.update_flag = UPGRADE_REBOOT;
@@ -283,13 +388,16 @@ static int doUpgradeAbort(A_Package *p, A_Package *res)
     u32 fileid = 0;
 
     char *errmsg = NULL;
+    char msgbuf[PACKAGE_MIN_SIZE] = {0};
     fileid = GetUpgradeID(p);
 
     // find info.
     BlockDataInfo *info = findInfo(&(gHandle.gBlockDataList), fileid);
     if(info == NULL){
         errmsg = axu_get_error_msg(A_MID_UID_NOT_FOUND);
-        make_response_error(p, ACMD_BP_RES_ERR, A_MID_UID_NOT_FOUND, errmsg, strlen(errmsg), res);
+        strcat(msgbuf, errmsg);
+		sprintf(msgbuf+strlen(errmsg), ": uid is %u.", fileid);
+        make_response_error(p, ACMD_BP_RES_ERR, A_MID_UID_NOT_FOUND, msgbuf, strlen(msgbuf), res);
         return 1;
     }
     if(info->flag < UPGRADE_WRITEING_FLASH){
@@ -297,7 +405,9 @@ static int doUpgradeAbort(A_Package *p, A_Package *res)
         make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
     }else {
         errmsg = axu_get_error_msg(A_UPGRADE_ABORT_ERROR);
-        make_response_error(p, ACMD_BP_RES_ERR, A_MID_UID_NOT_FOUND, errmsg, strlen(errmsg), res);
+        strcat(msgbuf, errmsg);
+		sprintf(msgbuf+strlen(errmsg), ": state is %d.", info->flag);
+        make_response_error(p, ACMD_BP_RES_ERR, A_MID_UID_NOT_FOUND, msgbuf, strlen(msgbuf), res);
     }
 
     return 0;
@@ -364,11 +474,19 @@ static int doSetBoeID(A_Package *p, A_Package *res)
 	}
     return 0;
 }
+
+static int doUnBind(A_Package *p, A_Package *res)
+{
+
+    return 0;
+}
+
 static int doCheckBind(A_Package *p, A_Package *res)
 {
 
     return 0;
 }
+
 static int doBindID(A_Package *p, A_Package *res)
 {
 

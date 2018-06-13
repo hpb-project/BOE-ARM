@@ -34,7 +34,6 @@ typedef enum UPGRADE_FLAG {
 	UPGRADE_RECVING,
     UPGRADE_RECV_FIN,
     UPGRADE_ERASEING_FLASH,
-	UPGRADE_ERASED_FLASH,
     UPGRADE_WRITEING_FLASH,
 	UPGRADE_WRITE_FLASH_FIN,
     UPGRADE_REBOOT = 0xA,
@@ -52,7 +51,8 @@ typedef struct BlockDataInfo{
     BlockDataUsage eDataUsage; // data usage.
     u32 uniqueId;  // data unique id, used for restructure
     u32 checksum;  // data checksum.
-    u32 dataLen;   // total length 
+    u32 dataLen;   // total length
+    u32 recLen;	   // receive length
     u32 flag;      // update flag or something.
     struct BlockDataInfo *next; // link to next blockdata info.
     u8  data[];    // act data.
@@ -68,6 +68,8 @@ typedef struct GlobalHandle {
 
 extern GlobalHandle gHandle;
 
+#define vMajor(ver)	(ver&0xFF>>0x4)
+#define vMinor(ver)	(ver&0xF)
 
 BlockDataInfo *findInfo(BlockDataInfo *head, u32 uniqueId);
 int addInfo(BlockDataInfo *head, BlockDataInfo *nInfo);
