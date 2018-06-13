@@ -29,6 +29,17 @@
 #include "community.h"
 #include "axu_connector.h"
 
+typedef enum UPGRADE_FLAG {
+    UPGRADE_NONE = 0,
+	UPGRADE_RECVING,
+    UPGRADE_RECV_FIN,
+    UPGRADE_ERASEING_FLASH,
+	UPGRADE_ERASED_FLASH,
+    UPGRADE_WRITEING_FLASH,
+	UPGRADE_WRITE_FLASH_FIN,
+    UPGRADE_REBOOT = 0xA,
+    UPGRADE_ABORT = 0xF,
+}UPGRADE_FLAG;
 
 typedef enum BlockDataUsage{
     BD_USE_START,

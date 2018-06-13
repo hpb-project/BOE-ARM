@@ -39,8 +39,10 @@ typedef struct A_PACKAGE{
 
 typedef enum A_Error{
     A_ERROR_START,
+	A_UNKNOWN_CMD,
     A_MAGIC_ERROR,
     A_CHECKSUM_ERROR,
+	A_ENV_UPDATE_ERROR,
     A_STA_USAGE_ERROR,
     A_MID_UID_NOT_FOUND,
     A_FIN_CHECKSUM_ERROR,
@@ -50,7 +52,6 @@ typedef enum A_Error{
 	A_UPGRADE_STATE_ERROR, // when get upgrade start command, current flag is not recv_finish.
     A_UPGRADE_FLASH_ERASE_ERROR,
     A_UPGRADE_FLASH_WRITE_ERROR,
-	A_UPGRADE_ENV_UPDATE_ERROR,
     A_UPGRADE_ABORT_ERROR,
     A_ERROR_END,
 }A_Error;
@@ -73,16 +74,15 @@ typedef enum A_CMD {
     ACMD_PB_GET_AXU_VER         = 0x0C,
     ACMD_PB_SET_BOEID           = 0x0D,
 
-    ACMD_BP_RES_ACK             = 0x51,
-    ACMD_BP_RES_VERSION         = 0x52,
-    ACMD_BP_RES_UPGRADE_PROGRESS= 0x53,
-    ACMD_BP_RES_ERR             = 0x54,
-    ACMD_BP_RES_RANDOM          = 0x55,
-    ACMD_BP_RES_BOEID           = 0x56,
-    ACMD_BP_RES_HW_VER          = 0x57,
-    ACMD_BP_RES_FW_VER          = 0x58,
-    ACMD_BP_RES_AXU_VER         = 0x59,
+	ACMD_PB_CHECK_BIND			= 0x0E,
+	ACMD_PB_BIND_ID				= 0x0F,
+	ACMD_PB_BIND_ACCOUNT		= 0x10,
+	ACMD_PB_HW_SIGN				= 0x11,
 
+
+    ACMD_BP_RES_ACK             = 0x51,
+    ACMD_BP_RES_ERR             = 0x52,
+    ACMD_BP_RES_UPGRADE_PROGRESS= 0x53,
 
     ACMD_END                    = 0xff,
 }ACmd;
