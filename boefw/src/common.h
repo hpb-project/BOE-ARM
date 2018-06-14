@@ -64,6 +64,8 @@ typedef struct GlobalHandle {
     BlockDataInfo gBlockDataList;
     MsgPoolHandle gMsgPoolIns;
     u8			bRun;
+    u8			gBindId;
+    u8			gBindAccount;
 }GlobalHandle;
 
 extern GlobalHandle gHandle;

@@ -57,6 +57,7 @@ typedef enum A_Error{
     A_UPGRADE_FLASH_WRITE_ERROR,
     A_UPGRADE_ABORT_ERROR,
 	A_VERSION_ERROR,
+	A_BINDID_ERROR,
     A_ERROR_END,
 }A_Error;
 const char *gAErrorMsg[A_ERROR_END];

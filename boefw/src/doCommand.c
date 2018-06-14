@@ -8,8 +8,7 @@
 #include "flash_oper.h"
 #include "version.h"
 #include "doCommand.h"
-
-
+static u8 gEmpty256[32] = {0};
 
 static int make_response_version(A_Package *req, ACmd cmd, u8 version, A_Package *p)
 {
@@ -477,24 +476,70 @@ static int doSetBoeID(A_Package *p, A_Package *res)
 
 static int doUnBind(A_Package *p, A_Package *res)
 {
-
+	memset(gHandle.gEnv.bindID, 0, sizeof(gHandle.gEnv.bindID));
+	memset(gHandle.gEnv.bindAccount, 0, sizeof(gHandle.gEnv.bindAccount));
+	gHandle.gBindId = 0;
+	gHandle.gBindAccount = 0;
+	env_update(&gHandle.gEnv);
+	make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
     return 0;
 }
 
 static int doCheckBind(A_Package *p, A_Package *res)
 {
-
+	if(memcmp(gHandle.gEnv.bindID, p->data, sizeof(gHandle.gEnv.bindID)) == 0){
+		gHandle.gBindId = 1;
+	}else{
+		gHandle.gBindId = 0;
+	}
     return 0;
+}
+
+static int doGetBindInfo(A_Package *p, A_Package *res)
+{
+	int offset = 0;
+	axu_package_init(res, p, ACMD_BP_RES_ACK);
+	axu_set_data(res, offset, gHandle.gEnv.bindID, sizeof(gHandle.gEnv.bindID));
+	offset += sizeof(gHandle.gEnv.bindID);
+	axu_set_data(res, offset, gHandle.gEnv.bindAccount, sizeof(gHandle.gEnv.bindAccount));
+	offset += sizeof(gHandle.gEnv.bindAccount);
+	axu_finish_package(res);
+	return 0;
 }
 
 static int doBindID(A_Package *p, A_Package *res)
 {
+	char *errmsg = NULL;
+	char msgbuf[PACKAGE_MIN_SIZE] = {0};
+	if(memcmp(gEmpty256, gHandle.gEnv.bindID, sizeof(gEmpty256)) == 0){
+		memcpy(gHandle.gEnv.bindID, p->data, sizeof(gEmpty256));
+		env_update(&gHandle.gEnv);
+		gHandle.gBindId = 1;
+	}else{
+		errmsg = axu_get_error_msg(A_BINDID_ERROR);
+		strcat(msgbuf, errmsg);
+		sprintf(msgbuf+strlen(errmsg), ": id has bound.");
+		make_response_error(p, ACMD_BP_RES_ERR, A_BINDID_ERROR, msgbuf, strlen(msgbuf), res);
+		return 1;
+	}
 
     return 0;
 }
 static int doBindAccount(A_Package *p, A_Package *res)
 {
-
+	char *errmsg = NULL;
+	char msgbuf[PACKAGE_MIN_SIZE] = {0};
+	if(memcmp(gEmpty256, gHandle.gEnv.bindAccount, sizeof(gEmpty256)) == 0){
+		memcpy(gHandle.gEnv.bindAccount, p->data, sizeof(gEmpty256));
+		env_update(&gHandle.gEnv);
+		gHandle.gBindAccount = 1;
+	}else{
+		errmsg = axu_get_error_msg(A_BINDID_ERROR);
+		strcat(msgbuf, errmsg);
+		sprintf(msgbuf+strlen(errmsg), ": account has bound.");
+		make_response_error(p, ACMD_BP_RES_ERR, A_BINDID_ERROR, msgbuf, strlen(msgbuf), res);
+		return 1;
+	}
     return 0;
 }
 
