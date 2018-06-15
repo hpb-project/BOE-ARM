@@ -125,12 +125,16 @@ int mainloop(void)
                 	make_response_error(rcv, ACMD_BP_RES_ERR, A_UNKNOWN_CMD, msgbuf, strlen(msgbuf), send);
                 }else{
                 	if(pcs->pre_check == NULL){
-                		pcs->do_func(rcv, send);
+                		ret = pcs->do_func(rcv, send);
                 	}
-                	else if(pcs->pre_check(rcv, send) == 0){
-						pcs->do_func(rcv, send);
+                	else {
+                		ret = pcs->pre_check(rcv, send);
+                		if(ret == PRET_OK){
+                			ret = pcs->do_func(rcv, send);
+                		}
 					}
-                	//Todo : check send response or not.
+                	if(ret == PRET_NORES) // don't send response.
+                		continue;
                 }
             }else if(2 == ret){
                 // checksum error.

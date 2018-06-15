@@ -83,6 +83,8 @@ typedef enum A_CMD {
 	ACMD_PB_BIND_ID				= 0x0F,
 	ACMD_PB_BIND_ACCOUNT		= 0x10,
 	ACMD_PB_HW_SIGN				= 0x11,
+	ACMD_PB_UNBIND				= 0x12,
+	ACMD_PB_GET_BINDINFO		= 0x13,
 
 
     ACMD_BP_RES_ACK             = 0x51,

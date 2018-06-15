@@ -9,7 +9,13 @@
 #define SRC_DOCOMMAND_H_
 #include "axu_connector.h"
 
-typedef int (*Func)(A_Package *req, A_Package *send);
+typedef enum PRET{
+	PRET_OK = 0,
+	PRET_ERROR = 1,
+	PRET_NORES = 2, // don't response.
+}PRET;
+
+typedef PRET (*Func)(A_Package *req, A_Package *send);
 
 typedef struct Processor{
 	ACmd acmd;

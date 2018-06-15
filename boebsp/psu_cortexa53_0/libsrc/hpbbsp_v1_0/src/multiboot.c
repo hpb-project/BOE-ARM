@@ -28,12 +28,9 @@
 #define CRL_APB_RESET_CTRL_SOFT_RESET_MASK    0X00000010U
 
 
-void GoMultiBoot(u32 MultiBootValue)
+void GoReset(void)
 {
 	u32 RegValue;
-
-	Xil_Out32(CSU_CSU_MULTI_BOOT, MultiBootValue);
-
 	/**
 	 * Due to a bug in 1.0 Silicon, PS hangs after System Reset if RPLL is used.
 	 * Hence, just for 1.0 Silicon, bypass the RPLL clock before giving
@@ -59,7 +56,13 @@ void GoMultiBoot(u32 MultiBootValue)
 	while(1) {
 		;
 	}
+}
 
+void GoMultiBoot(u32 MultiBootValue)
+{
+
+	Xil_Out32(CSU_CSU_MULTI_BOOT, MultiBootValue);
+	GoReset();
 
 	return;
 
