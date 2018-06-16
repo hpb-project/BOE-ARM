@@ -58,6 +58,7 @@ void axu_package_init(A_Package *pack, A_Package* req, ACmd cmd)
     if(req){
         // is a response package.
         pack->header.package_id = req->header.package_id;
+        pack->header.q_or_r = 1;
     }else{
         pack->header.package_id = g_sequence_id++;
     }

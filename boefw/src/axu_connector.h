@@ -30,7 +30,7 @@ typedef struct A_PACKAGE_HEADER {
     uint16_t package_id;
     uint16_t body_length;
     uint8_t  acmd;
-    uint8_t  reserved;
+    uint8_t  q_or_r; // 0 is query and 1 is response.
     uint16_t magic_ccaa;
 }A_Package_Header;
 
