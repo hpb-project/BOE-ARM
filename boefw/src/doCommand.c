@@ -475,7 +475,7 @@ static PRET doSetBoeID(A_Package *p, A_Package *res)
 	}
     return PRET_OK;
 }
-
+#if 0 // remove unbind at 2018-6-20
 static PRET doUnBind(A_Package *p, A_Package *res)
 {
 	memset(gHandle.gEnv.bindID, 0, sizeof(gHandle.gEnv.bindID));
@@ -486,7 +486,8 @@ static PRET doUnBind(A_Package *p, A_Package *res)
 	make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
     return PRET_OK;
 }
-
+#endif
+#if 0 // remove check bind at 2018-6-20
 static PRET doCheckBind(A_Package *p, A_Package *res)
 {
 	char *errmsg = NULL;
@@ -518,19 +519,19 @@ static PRET doCheckBind(A_Package *p, A_Package *res)
 
     return PRET_OK;
 }
+#endif
 
 static PRET doGetBindInfo(A_Package *p, A_Package *res)
 {
 	int offset = 0;
 	axu_package_init(res, p, ACMD_BP_RES_ACK);
-	axu_set_data(res, offset, gHandle.gEnv.bindID, sizeof(gHandle.gEnv.bindID));
-	offset += sizeof(gHandle.gEnv.bindID);
 	axu_set_data(res, offset, gHandle.gEnv.bindAccount, sizeof(gHandle.gEnv.bindAccount));
 	offset += sizeof(gHandle.gEnv.bindAccount);
 	axu_finish_package(res);
 	return PRET_OK;
 }
 
+#if 0 // remove bindid 2018-6-20
 static PRET doBindID(A_Package *p, A_Package *res)
 {
 	char *errmsg = NULL;
@@ -539,6 +540,7 @@ static PRET doBindID(A_Package *p, A_Package *res)
 		memcpy(gHandle.gEnv.bindID, p->data, sizeof(gEmpty256));
 		env_update(&gHandle.gEnv);
 		gHandle.gBindId = 1;
+		make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
 	}else{
 		errmsg = axu_get_error_msg(A_BINDID_ERROR);
 		strcat(msgbuf, errmsg);
@@ -549,6 +551,7 @@ static PRET doBindID(A_Package *p, A_Package *res)
 
     return PRET_OK;
 }
+#endif
 
 static PRET doBindAccount(A_Package *p, A_Package *res)
 {
@@ -558,6 +561,7 @@ static PRET doBindAccount(A_Package *p, A_Package *res)
 		memcpy(gHandle.gEnv.bindAccount, p->data, sizeof(gEmpty256));
 		env_update(&gHandle.gEnv);
 		gHandle.gBindAccount = 1;
+		make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
 	}else{
 		errmsg = axu_get_error_msg(A_BINDID_ERROR);
 		strcat(msgbuf, errmsg);
@@ -586,37 +590,25 @@ static PRET doHWSign(A_Package *p, A_Package *res)
     return PRET_NORES;
 }
 
-static PRET pre_need_bind(A_Package *p, A_Package *res)
-{
-	char *errmsg = NULL;
-	if(gHandle.gBindId == 1 && gHandle.gBindAccount == 1){
-		return PRET_OK;
-	}else{
-		errmsg = axu_get_error_msg(A_BINDID_ERROR);
-		make_response_error(p, ACMD_BP_RES_ERR, A_BINDID_ERROR, errmsg, strlen(errmsg), res);
-		return PRET_ERROR;
-	}
-}
-
 Processor gCmdProcess[ACMD_END] = {
 	    [ACMD_PB_GET_VERSION_INFO] 	= {ACMD_PB_GET_VERSION_INFO, NULL, doGetVersion},
-	    [ACMD_PB_TRANSPORT_START] 	= {ACMD_PB_TRANSPORT_START, pre_need_bind, doTransportStart},
-	    [ACMD_PB_TRANSPORT_MIDDLE] 	= {ACMD_PB_TRANSPORT_MIDDLE, pre_need_bind, doTransportMid},
-	    [ACMD_PB_TRANSPORT_FINISH] 	= {ACMD_PB_TRANSPORT_FINISH, pre_need_bind, doTransportFin},
-	    [ACMD_PB_UPGRADE_START] 	= {ACMD_PB_UPGRADE_START, pre_need_bind, doUpgradeStart},
-	    [ACMD_PB_UPGRADE_ABORT] 	= {ACMD_PB_UPGRADE_ABORT, pre_need_bind, doUpgradeAbort},
-	    [ACMD_PB_RESET] 			= {ACMD_PB_RESET, pre_need_bind, doReset},
+	    [ACMD_PB_TRANSPORT_START] 	= {ACMD_PB_TRANSPORT_START, NULL, doTransportStart},
+	    [ACMD_PB_TRANSPORT_MIDDLE] 	= {ACMD_PB_TRANSPORT_MIDDLE, NULL, doTransportMid},
+	    [ACMD_PB_TRANSPORT_FINISH] 	= {ACMD_PB_TRANSPORT_FINISH, NULL, doTransportFin},
+	    [ACMD_PB_UPGRADE_START] 	= {ACMD_PB_UPGRADE_START, NULL, doUpgradeStart},
+	    [ACMD_PB_UPGRADE_ABORT] 	= {ACMD_PB_UPGRADE_ABORT, NULL, doUpgradeAbort},
+	    [ACMD_PB_RESET] 			= {ACMD_PB_RESET, NULL, doReset},
 	    [ACMD_PB_GET_RANDOM] 		= {ACMD_PB_GET_RANDOM, NULL, doGetRandom},
-	    [ACMD_PB_GET_BOEID] 		= {ACMD_PB_GET_BOEID, pre_need_bind, doGetBoeID},
+	    [ACMD_PB_GET_BOEID] 		= {ACMD_PB_GET_BOEID, NULL, doGetBoeID},
 	    [ACMD_PB_GET_HW_VER] 		= {ACMD_PB_GET_HW_VER, NULL, doGetHWVer},
 	    [ACMD_PB_GET_FW_VER] 		= {ACMD_PB_GET_FW_VER, NULL, doGetFWVer},
 	    [ACMD_PB_GET_AXU_VER] 		= {ACMD_PB_GET_AXU_VER, NULL, doGetAXUVer},
 	    [ACMD_PB_SET_BOEID] 		= {ACMD_PB_SET_BOEID, NULL, doSetBoeID},
-		[ACMD_PB_CHECK_BIND] 		= {ACMD_PB_CHECK_BIND, NULL, doCheckBind},
-		[ACMD_PB_BIND_ID] 			= {ACMD_PB_BIND_ID, NULL, doBindID},
+//		[ACMD_PB_CHECK_BIND] 		= {ACMD_PB_CHECK_BIND, NULL, doCheckBind},
+//		[ACMD_PB_BIND_ID] 			= {ACMD_PB_BIND_ID, NULL, doBindID},
 		[ACMD_PB_BIND_ACCOUNT] 		= {ACMD_PB_BIND_ACCOUNT, NULL, doBindAccount},
-		[ACMD_PB_HW_SIGN] 			= {ACMD_PB_HW_SIGN, pre_need_bind, doHWSign},
-		[ACMD_PB_UNBIND] 			= {ACMD_PB_UNBIND, NULL, doUnBind},
+		[ACMD_PB_HW_SIGN] 			= {ACMD_PB_HW_SIGN, NULL, doHWSign},
+//		[ACMD_PB_UNBIND] 			= {ACMD_PB_UNBIND, NULL, doUnBind},
 		[ACMD_PB_GET_BINDINFO] 		= {ACMD_PB_GET_BINDINFO, NULL, doGetBindInfo},
 };
 
