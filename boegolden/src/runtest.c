@@ -26,7 +26,7 @@ void test_flash(void)
     int Status;
     int byteCnt = 0x10;
     u8 defData = 0x1C;
-    u32 test_addr = 0x80000;
+    u32 test_addr = 0x60000;
     u32 maxdata = 0x800;
 #if 0 // page test.
     u8 filldata = 0xab;
@@ -67,32 +67,33 @@ void test_flash(void)
 #endif
 #if 1 // block test.
     u8 filldata = 0xab;
-    u8 wbfr[1500] = {0};
-    u8 rbfr[1500] = {0};
+    u8 wbfr[2050] = {0};
+    u8 rbfr[2050] = {0};
     memset(wbfr, filldata, sizeof(wbfr));
     XQspiPsu *QspiPsuInstancePtr = &QspiPsuInstance;
+    maxdata = sizeof(wbfr);
 	Status = FlashInit(&QspiPsuInstance);
 	if (Status != XST_SUCCESS) {
 		xil_printf("Flash Init failed.\r\n");
         return ;
 	}
-	Status = FlashErase(&QspiPsuInstance, test_addr, maxdata);
+	Status = FlashErase(&QspiPsuInstance, test_addr, 0x1000*4);
 	if (Status != XST_SUCCESS) {
 		return ;
 	}
-	Status = FlashWrite(&QspiPsuInstance, test_addr, sizeof(wbfr), wbfr);
+	Status = FlashWrite(&QspiPsuInstance, test_addr, maxdata, wbfr);
 	if(Status != XST_SUCCESS)
 	{
 		printf("Flash write failed.\n");
 		return;
 	}
-	Status = FlashRead(QspiPsuInstancePtr, test_addr, sizeof(rbfr), rbfr);
+	Status = FlashRead(QspiPsuInstancePtr, test_addr, maxdata, rbfr);
 	if(Status != XST_SUCCESS)
 	{
 		printf("Flash read failed.\n");
 		return;
 	}
-	if(memcmp(rbfr, wbfr, sizeof(rbfr)) == 0) {
+	if(memcmp(rbfr, wbfr, maxdata) == 0) {
 		printf("Flash Write and Read 256 success.\n");
 	}else {
 		printf("Flash Write and Read 256 failed.\n");
@@ -170,6 +171,8 @@ void test_env(void)
 			return;
 		}
 	}
+	printf("env test success.\r\n");
+	return;
 }
 
 extern void runtest(void)
