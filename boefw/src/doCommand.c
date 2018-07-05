@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include "common.h"
 #include "flash_oper.h"
+#include "flash_map.h"
 #include "version.h"
 #include "doCommand.h"
 static u8 gEmpty256[32] = {0};

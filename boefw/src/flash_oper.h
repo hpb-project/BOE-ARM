@@ -28,21 +28,22 @@ typedef struct{
 	u8 NumDie;			/* No. of die forming a single flash */
 }FlashInfo;
 
-int FlashInit(XQspiPsu *QspiPsuInstancePtr, u16 QspiPsuDeviceId);
 
+int FlashInit(XQspiPsu *QspiPsuInstancePtr);
 
+int FlashReadID(XQspiPsu *QspiPsuPtr);
 int FlashErase(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount);
-int GetFlashInfo(XQspiPsu *QspiPsuPtr, FlashInfo *info);
-
-// warning: all write data need in one page size.
-int FlashWrite(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr);
-
-int FlashRead(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *ReadBfrPtr);
-
+int FlashGetInfo(XQspiPsu *QspiPsuPtr, FlashInfo *info);
+int FlashWriteInPage(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 Command,
+				u8 *WriteBfrPtr);
+int FlashRead(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount,  u8 *ReadBfrPtr);
+u32 GetRealAddr(XQspiPsu *QspiPsuPtr, u32 Address);
+int BulkErase(XQspiPsu *QspiPsuPtr, u8 *WriteBfrPtr);
+int DieErase(XQspiPsu *QspiPsuPtr, u8 *WriteBfrPtr);
 int FlashRegisterRead(XQspiPsu *QspiPsuPtr, u32 ByteCount, u8 Command, u8 *ReadBfrPtr);
 int FlashRegisterWrite(XQspiPsu *QspiPsuPtr, u32 ByteCount, u8 Command,
 					u8 *WriteBfrPtr, u8 WrEn);
+int FlashEnterExit4BAddMode(XQspiPsu *QspiPsuPtr,unsigned int Enable);
 
-
-
+int FlashWrite(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr);
 #endif /* SRC_FLASH_OPER_H_ */

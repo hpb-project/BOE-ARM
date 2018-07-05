@@ -71,7 +71,7 @@ void test_flash(void)
     u8 rbfr[1500] = {0};
     memset(wbfr, filldata, sizeof(wbfr));
     XQspiPsu *QspiPsuInstancePtr = &QspiPsuInstance;
-	Status = FlashInit(&QspiPsuInstance, 0);
+	Status = FlashInit(&QspiPsuInstance);
 	if (Status != XST_SUCCESS) {
 		xil_printf("Flash Init failed.\r\n");
         return ;

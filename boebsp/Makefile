@@ -33,4 +33,3 @@ $(PROCESSOR)/lib/libxil.a: $(PROCESSOR)/lib/libxil_init.a
 	$(MAKE) -C $(subst /make.clean,,$@) -s clean 
 clean:
 	rm -f ${PROCESSOR}/lib/libxil.a
-	rm -f ${PROCESSOR}/lib/libhpb.a

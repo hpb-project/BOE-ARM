@@ -163,7 +163,7 @@ int main()
     int status = 0;
     init_platform();
     // 1. some init.
-    status = FlashInit(&gHandle.gFlashInstance, 0);
+    status = FlashInit(&gHandle.gFlashInstance);
     if(status != XST_SUCCESS){
         xil_printf("FlashInit failed.\n\r");
         return -1;

@@ -56,10 +56,11 @@ int main()
 {
 
     init_platform();
-    doMultiBoot();
+    //doMultiBoot();
+    xil_printf("hello world.\r\n");
 
-    //extern void runtest();
-    //runtest();
+    extern void runtest();
+    runtest();
 
 
     cleanup_platform();

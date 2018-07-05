@@ -155,7 +155,7 @@ int env_init(void)
     int Status = 0;
 
     if(0 == gHandle.bInit){
-        Status = FlashInit(&gHandle.flashInstance, 0);
+        Status = FlashInit(&gHandle.flashInstance);
         if (Status != XST_SUCCESS) {
             xil_printf("Flash Init failed.\r\n");
             return XST_FAILURE;
@@ -166,7 +166,7 @@ int env_init(void)
             return XST_FAILURE;
         }
         FlashInfo fi;
-        Status = GetFlashInfo(&gHandle.flashInstance, &fi);
+        Status = FlashGetInfo(&gHandle.flashInstance, &fi);
         if(Status != XST_SUCCESS) {
             xil_printf("Get flashinfo failed.\r\n");
             gHandle.flash_sector_size = UNKNOWN_FLASH_SECTOR_SIZE;
