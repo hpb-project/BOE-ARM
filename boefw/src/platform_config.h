@@ -3,4 +3,9 @@
 
 #define STDOUT_IS_PSU_UART
 #define UART_DEVICE_ID 0
+
+#define PLATFORM_EMAC_BASEADDR XPAR_XEMACPS_0_BASEADDR
+
 #endif
+
+

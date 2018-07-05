@@ -162,6 +162,8 @@ int main()
 {
     int status = 0;
     init_platform();
+
+#if 0
     // 1. some init.
     status = FlashInit(&gHandle.gFlashInstance);
     if(status != XST_SUCCESS){
@@ -196,6 +198,8 @@ int main()
 
     // 3. enter mainloop.
     mainloop();
+#endif
+    networkinit();
 
 
 

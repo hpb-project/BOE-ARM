@@ -368,7 +368,7 @@ u32_t phy_setup (XEmacPs *xemacpsp, u32_t phy_addr)
 #endif
 
 #ifdef  CONFIG_LINKSPEED_AUTODETECT
-	link_speed = get_IEEE_phy_speed(xemacpsp, phy_addr);
+	link_speed = 100; //get_IEEE_phy_speed(xemacpsp, phy_addr);
 	if (link_speed == 1000) {
 		SetUpSLCRDivisors(xemacpsp->Config.BaseAddress,1000);
 		convspeeddupsetting = XEMACPS_GMII2RGMII_SPEED1000_FD;
