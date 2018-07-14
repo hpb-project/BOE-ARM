@@ -93,6 +93,9 @@
 #include "xil_cache.h"
 #include "flash_oper.h"
 
+#define DUMMY_FLASH 1
+
+#ifndef DUMMY_FLASH
 /************************** Constant Definitions *****************************/
 
 /*
@@ -372,6 +375,7 @@ static u32 FCTIndex;	/* Flash configuration table index */
  */
 
 static XQspiPsu_Msg FlashMsg[5];
+u8 CmdBfr[8];
 static int WriteToPage(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr);
 /*****************************************************************************/
 /**
@@ -393,7 +397,6 @@ int FlashInit(XQspiPsu *QspiPsuInstancePtr)
 	int Status;
 	u16 QspiPsuDeviceId = QSPIPSU_DEVICE_ID;
 	XQspiPsu_Config *QspiPsuConfig;
-
 
 	/*
 	 * Initialize the QSPIPSU driver so that it's ready to use
@@ -727,6 +730,7 @@ int FlashWriteInPage(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 Comman
 	 * If stacked assert the slave select based on address
 	 */
 	RealAddr = GetRealAddr(QspiPsuPtr, Address);
+	xil_printf("write to Address = 0x%x.\r\n", RealAddr);
 
 	/*
 	 * Send the write enable command to the Flash so that it can be
@@ -842,6 +846,9 @@ static int WriteToPage(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *Wri
 	memset(pagebuf, 0xFF, pagesize);
 	memcpy(pagebuf+offset, WriteBfrPtr, len);
 	FlashWriteInPage(QspiPsuPtr, pageAddr, pagesize, WriteCmd, pagebuf);
+	for(int i = 0; i < pagesize; i++){
+		xil_printf("pagebuf[0x%02x] = 0x%02x\r\n", i, pagebuf[i]);
+	}
 	free(pagebuf);
 	return len;
 }
@@ -1786,4 +1793,80 @@ int FlashEnterExit4BAddMode(XQspiPsu *QspiPsuPtr,unsigned int Enable)
 
 	return Status;
 }
+#else
+static u8 *FlashMem = NULL;
+#define FLASH_SIZE (128*1024*1024)
+int FlashInit(XQspiPsu *QspiPsuInstancePtr)
+{
+	FlashMem = (u8*)malloc(FLASH_SIZE);
+	if(FlashMem == NULL)
+	{
+		xil_printf("Dummy FlashInit failed.\r\n");
+		return XST_FAILURE;
+	}
+	return XST_SUCCESS;
+}
+
+int FlashReadID(XQspiPsu *QspiPsuPtr)
+{
+	return XST_SUCCESS;
+}
+int FlashErase(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount)
+{
+	u8 *paddr = FlashMem + Address;
+	memset(paddr, 0xff, ByteCount);
+	return XST_SUCCESS;
+}
+int FlashGetInfo(XQspiPsu *QspiPsuPtr, FlashInfo *info)
+{
+	return XST_SUCCESS;
+}
+int FlashWriteInPage(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 Command,
+				u8 *WriteBfrPtr)
+{
+	u8 *paddr = FlashMem + Address;
+	memcpy(paddr, WriteBfrPtr, ByteCount);
+	return XST_SUCCESS;
+}
+int FlashRead(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount,  u8 *ReadBfrPtr)
+{
+	u8 *paddr = FlashMem + Address;
+	memcpy(ReadBfrPtr, paddr, ByteCount);
+	return XST_SUCCESS;
+}
+u32 GetRealAddr(XQspiPsu *QspiPsuPtr, u32 Address)
+{
+	return Address;
+}
+int BulkErase(XQspiPsu *QspiPsuPtr, u8 *WriteBfrPtr)
+{
+	return XST_SUCCESS;
+}
+int DieErase(XQspiPsu *QspiPsuPtr, u8 *WriteBfrPtr)
+{
+	return XST_SUCCESS;
+}
+int FlashRegisterRead(XQspiPsu *QspiPsuPtr, u32 ByteCount, u8 Command, u8 *ReadBfrPtr)
+{
+	return XST_SUCCESS;
+}
+int FlashRegisterWrite(XQspiPsu *QspiPsuPtr, u32 ByteCount, u8 Command,
+					u8 *WriteBfrPtr, u8 WrEn)
+{
+	return XST_SUCCESS;
+}
+int FlashEnterExit4BAddMode(XQspiPsu *QspiPsuPtr,unsigned int Enable)
+{
+	return XST_SUCCESS;
+}
+
+int FlashWrite(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr)
+{
+	u8 *paddr = FlashMem + Address;
+	memcpy(paddr, WriteBfrPtr, ByteCount);
+	return XST_SUCCESS;
+}
+#endif
+
+
 

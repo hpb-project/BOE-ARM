@@ -17,14 +17,16 @@ static int make_response_version(A_Package *req, ACmd cmd, u8 version, A_Package
 {
     axu_package_init(p, req, cmd);
     axu_set_data(p, 0, &version, 1);
+    xil_printf("version = 0x%02x\r\n", version);
     axu_finish_package(p);
     return 0;
 }
 
 static int make_response_random(A_Package *req, ACmd cmd, A_Package *p)
 {
+	uint32_t r = genrandom();
+	xil_printf("random = %d\r\n", r);
     axu_package_init(p, req, cmd);
-    uint32_t r = genrandom();
     axu_set_data(p, 0, (u8*)&r, sizeof(r));
     axu_finish_package(p);
     return 0;
@@ -45,6 +47,7 @@ int make_response_ack(A_Package *req, ACmd cmd, u8 ack, A_Package *p)
 {
     axu_package_init(p, req, cmd);
     axu_set_data(p, 0, &ack, sizeof(ack));
+    xil_printf("response ack = %d.\r\n", ack);
     axu_finish_package(p);
     return 0;
 }
@@ -53,6 +56,7 @@ static int make_response_boeid(A_Package *req, ACmd cmd, A_Package *p)
 {
     axu_package_init(p, req, cmd);
     axu_set_data(p, 0, (u8*)&gHandle.gEnv.boeid, sizeof(gHandle.gEnv.boeid));
+    xil_printf("response boeid = 0x%x\r\n", gHandle.gEnv.boeid);
     axu_finish_package(p);
     return 0;
 }
@@ -65,6 +69,7 @@ int make_response_error(A_Package *req, ACmd cmd, u8 err_code, char*err_info, in
     offset += sizeof(err_code);
     axu_set_data(p, offset, (u8*)err_info, len);
     axu_finish_package(p);
+    xil_printf("response err = %d, msg = %s.\r\n", err_code, err_info);
     return 0;
 }
 
@@ -72,7 +77,7 @@ void send_upgrade_progress(u8 progress, char *msg)
 {
 	A_Package *pack = axu_package_new(PACKAGE_MIN_SIZE);
 	make_package_progress(ACMD_BP_RES_UPGRADE_PROGRESS, progress, msg, pack);
-	msg_pool_txsend(gHandle.gMsgPoolIns, pack, PACKAGE_MIN_SIZE);
+	msg_pool_txsend(gHandle.gMsgPoolIns, pack, axu_package_len(pack));
 	axu_package_free(pack);
 }
 
@@ -116,15 +121,18 @@ static PRET doTransportStart(A_Package *p, A_Package *res)
     fileid = GetStartID(p);
     datalen = GetStartTotallen(p);
 
+    xil_printf("fid = 0x%x, len = %d.\r\n", fileid, datalen);
     // remove old info.
     BlockDataInfo *info = findInfo(&(gHandle.gBlockDataList), fileid);
     if(info != NULL){
+    	xil_printf("remove old file info.\r\n");
         removeInfo(&gHandle.gBlockDataList, info);
         info = NULL;
     }
     // check usage.
     BlockDataUsage usage = GetStartUsage(p);
     if(usage >= BD_USE_END || usage <= BD_USE_START){
+    	xil_printf("usage not support, %d.\r\n", usage);
         errmsg = axu_get_error_msg(A_STA_USAGE_ERROR);
         make_response_error(p, ACMD_BP_RES_ERR, A_STA_USAGE_ERROR, errmsg, strlen(errmsg), res);
         return PRET_ERROR;
@@ -132,6 +140,7 @@ static PRET doTransportStart(A_Package *p, A_Package *res)
 
     // check version info, then create info.
     if(checkVersion(p) != 0){
+    	xil_printf("check version error.\r\n");
     	errmsg = axu_get_error_msg(A_VERSION_ERROR);
 		make_response_error(p, ACMD_BP_RES_ERR, A_VERSION_ERROR, errmsg, strlen(errmsg), res);
 		return PRET_ERROR;
@@ -426,38 +435,48 @@ static PRET doGetVersion(A_Package *p, A_Package *res)
     axu_set_data(res, offset, &gAXUVersion, 1);
     offset += 1;
     axu_finish_package(res);
+    xil_printf("do: %s\r\n", __FUNCTION__);
     return PRET_OK;
 }
 
 static PRET doReset(A_Package *p, A_Package *res)
 {
+	xil_printf("do: %s\r\n", __FUNCTION__);
+	make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
+	msg_pool_txsend(gHandle.gMsgPoolIns, res, axu_package_len(res));
+
 	GoReset();
     return PRET_OK;
 }
 
 static PRET doGetRandom(A_Package *p, A_Package *res)
 {
+	xil_printf("do: %s\r\n", __FUNCTION__);
 	make_response_random(p, ACMD_BP_RES_ACK,res);
 
     return PRET_OK;
 }
 static PRET doGetBoeID(A_Package *p, A_Package *res)
 {
+	xil_printf("do: %s\r\n", __FUNCTION__);
 	make_response_boeid(p, ACMD_BP_RES_ACK,res);
     return PRET_OK;
 }
 static PRET doGetHWVer(A_Package *p, A_Package *res)
 {
+	xil_printf("do: %s\r\n", __FUNCTION__);
 	make_response_version(p, ACMD_BP_RES_ACK, gHWVersion, res);
     return PRET_OK;
 }
 static PRET doGetFWVer(A_Package *p, A_Package *res)
 {
+	xil_printf("do: %s\r\n", __FUNCTION__);
 	make_response_version(p, ACMD_BP_RES_ACK, gBFVersion, res);
     return PRET_OK;
 }
 static PRET doGetAXUVer(A_Package *p, A_Package *res)
 {
+	xil_printf("do: %s\r\n", __FUNCTION__);
 	make_response_version(p, ACMD_BP_RES_ACK, gAXUVersion, res);
     return PRET_OK;
 }
@@ -468,6 +487,8 @@ static PRET doSetBoeID(A_Package *p, A_Package *res)
 	char *errmsg = NULL;
 	memcpy(&nBoeID, p->data, sizeof(u32));
 	gHandle.gEnv.boeid = nBoeID;
+
+	xil_printf("do: %s\r\n", __FUNCTION__);
 	if(env_update(&(gHandle.gEnv)) == 0) {
 		make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
 	}else{
@@ -522,13 +543,20 @@ static PRET doCheckBind(A_Package *p, A_Package *res)
 }
 #endif
 
-static PRET doGetBindInfo(A_Package *p, A_Package *res)
+static PRET doGetBindAccount(A_Package *p, A_Package *res)
 {
 	int offset = 0;
 	axu_package_init(res, p, ACMD_BP_RES_ACK);
 	axu_set_data(res, offset, gHandle.gEnv.bindAccount, sizeof(gHandle.gEnv.bindAccount));
+	for(int i = 0; i< sizeof(gEmpty256); i++)
+	{
+		xil_printf("ba[%d] = 0x%02x\r\n", i, gHandle.gEnv.bindAccount[i]);
+	}
+
 	offset += sizeof(gHandle.gEnv.bindAccount);
 	axu_finish_package(res);
+
+	xil_printf("do: %s\r\n", __FUNCTION__);
 	return PRET_OK;
 }
 
@@ -558,35 +586,52 @@ static PRET doBindAccount(A_Package *p, A_Package *res)
 {
 	char *errmsg = NULL;
 	char msgbuf[PACKAGE_MIN_SIZE] = {0};
-	if(memcmp(gEmpty256, gHandle.gEnv.bindAccount, sizeof(gEmpty256)) == 0){
-		memcpy(gHandle.gEnv.bindAccount, p->data, sizeof(gEmpty256));
-		env_update(&gHandle.gEnv);
+
+	xil_printf("do: %s\r\n", __FUNCTION__);
+	for(int i = 0; i< sizeof(gEmpty256); i++)
+	{
+		xil_printf("ra[%d] = 0x%02x\r\n", i, p->data[i]);
+	}
+	memcpy(gHandle.gEnv.bindAccount, p->data, sizeof(gEmpty256));
+	if(env_update(&(gHandle.gEnv)) == 0) {
 		gHandle.gBindAccount = 1;
 		make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
 	}else{
-		errmsg = axu_get_error_msg(A_BINDID_ERROR);
-		strcat(msgbuf, errmsg);
-		sprintf(msgbuf+strlen(errmsg), ": account has bound.");
-		make_response_error(p, ACMD_BP_RES_ERR, A_BINDID_ERROR, msgbuf, strlen(msgbuf), res);
-		return PRET_ERROR;
+		errmsg = axu_get_error_msg(A_ENV_UPDATE_ERROR);
+		make_response_error(p, ACMD_BP_RES_ERR, A_ENV_UPDATE_ERROR, errmsg, strlen(errmsg), res);
 	}
     return PRET_OK;
 }
 
+static void hwsign(u8 *src, int srclen, u8 *sign, int slen)
+{
+	int len = srclen > slen ? slen : srclen;
+	memset(sign, 0x0, slen);
+	for(int i = 0; i < len; i++)
+	{
+		sign[i] = src[i]<<2;
+	}
+	return;
+}
 static PRET doHWSign(A_Package *p, A_Package *res)
 {
 	int datalen = p->header.body_length;
-	u8 *sdata = (u8*)malloc(datalen);
-	memcpy(sdata, p->data, datalen);
-	u32 result = checksum(sdata, datalen);
+	u8 *sdata = p->data;
+
+	// todo: change checksum to other function.
+	u8 result[65];
+	hwsign(sdata, datalen, result, sizeof(result));
+
 	int plen = sizeof(result) + sizeof(A_Package);
 	A_Package *sp = (A_Package*)malloc(plen);
 	sp->header.body_length = sizeof(result);
 	axu_package_init(sp, p, ACMD_BP_RES_ACK);
 	axu_set_data(sp, 0, (u8*)&result, sizeof(result));
-	axu_finish_package(res);
-	msg_pool_txsend(gHandle.gMsgPoolIns, sp, plen);
+	axu_finish_package(sp);
+	msg_pool_txsend(gHandle.gMsgPoolIns, sp, axu_package_len(sp));
 	axu_package_free(sp);
+
+	xil_printf("do: %s\r\n", __FUNCTION__);
 
     return PRET_NORES;
 }
@@ -605,12 +650,14 @@ Processor gCmdProcess[ACMD_END] = {
 	    [ACMD_PB_GET_FW_VER] 		= {ACMD_PB_GET_FW_VER, NULL, doGetFWVer},
 	    [ACMD_PB_GET_AXU_VER] 		= {ACMD_PB_GET_AXU_VER, NULL, doGetAXUVer},
 	    [ACMD_PB_SET_BOEID] 		= {ACMD_PB_SET_BOEID, NULL, doSetBoeID},
+
+		[ACMD_PB_BIND_ACCOUNT] 		= {ACMD_PB_BIND_ACCOUNT, NULL, doBindAccount},
+		[ACMD_PB_GET_BINDINFO] 		= {ACMD_PB_GET_BINDINFO, NULL, doGetBindAccount},
+		[ACMD_PB_HW_SIGN] 			= {ACMD_PB_HW_SIGN, NULL, doHWSign},
 //		[ACMD_PB_CHECK_BIND] 		= {ACMD_PB_CHECK_BIND, NULL, doCheckBind},
 //		[ACMD_PB_BIND_ID] 			= {ACMD_PB_BIND_ID, NULL, doBindID},
-		[ACMD_PB_BIND_ACCOUNT] 		= {ACMD_PB_BIND_ACCOUNT, NULL, doBindAccount},
-		[ACMD_PB_HW_SIGN] 			= {ACMD_PB_HW_SIGN, NULL, doHWSign},
 //		[ACMD_PB_UNBIND] 			= {ACMD_PB_UNBIND, NULL, doUnBind},
-		[ACMD_PB_GET_BINDINFO] 		= {ACMD_PB_GET_BINDINFO, NULL, doGetBindInfo},
+
 };
 
 Processor* processor_get(ACmd acmd)

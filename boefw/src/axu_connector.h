@@ -19,7 +19,7 @@
 #include <xil_types.h>
 
 
-#define PACKAGE_MAX_SIZE 	(2048)   // 2KB
+#define PACKAGE_MAX_SIZE 	(1024)   // 1KB
 #define PACKAGE_MIN_SIZE 	(100)
 
 #define AXU_MAGIC_START (0xaacc)
@@ -31,6 +31,7 @@ typedef struct A_PACKAGE_HEADER {
     uint16_t body_length;
     uint8_t  acmd;
     uint8_t  q_or_r; // 0 is query and 1 is response.
+    uint16_t reversed;
     uint16_t magic_ccaa;
 }A_Package_Header;
 
@@ -101,7 +102,8 @@ void axu_package_init(A_Package *pack, A_Package* req, ACmd cmd);
 
 int axu_set_data(A_Package *pack, int offset, u8 *data, int len);
 
-void axu_finish_package(A_Package *pack);
+void axu_finish_package();
+int axu_package_len(A_Package *pack);
 
 char *axu_get_error_msg(A_Error ecode);
 

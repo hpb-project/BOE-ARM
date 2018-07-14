@@ -22,20 +22,20 @@
 #include "compiler.h"
 
 static uint16_t  g_sequence_id = 0;
-#define MAX_PACKAGE_LENGTH (2048+sizeof(A_Package))
+#define MAX_PACKAGE_LENGTH (PACKAGE_MAX_SIZE+sizeof(A_Package))
 
 #define fetch_axu_package_sequence() (g_sequence_id++)
 
 A_Package* axu_package_new(int len)
 {
-    if(len < PACKAGE_MIN_SIZE)
-        len = PACKAGE_MIN_SIZE;
+	len += sizeof(A_Package);
+
     if(len > PACKAGE_MAX_SIZE)
         return NULL;
 
     A_Package * pack = (A_Package*)malloc(len);
     if(pack != NULL)
-        pack->header.body_length = len - sizeof(A_Package_Header);
+        pack->header.body_length = len;
 
     return pack;
 }
@@ -61,7 +61,9 @@ void axu_package_init(A_Package *pack, A_Package* req, ACmd cmd)
         pack->header.q_or_r = 1;
     }else{
         pack->header.package_id = g_sequence_id++;
+        pack->header.q_or_r = 0;
     }
+    return ;
 }
 
 int axu_set_data(A_Package *pack, int offset, u8 *data, int len)
@@ -77,6 +79,12 @@ void axu_finish_package(A_Package *pack)
 {
     pack->checksum = checksum(pack->data, pack->header.body_length);
 }
+
+int axu_package_len(A_Package *pack)
+{
+	return pack->header.body_length + sizeof(A_Package);
+}
+
 const char *gErrMsg[] = {
 		NULL,
 		"unknown cmd",
@@ -106,5 +114,5 @@ char *axu_get_error_msg(A_Error ecode)
 
 static void buildCheck()
 {
-    BUILD_CHECK_SIZE_EQUAL(sizeof(A_Package_Header), 10);
+    BUILD_CHECK_SIZE_EQUAL(sizeof(A_Package_Header), 12);
 }

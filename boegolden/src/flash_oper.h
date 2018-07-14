@@ -8,7 +8,7 @@
 #ifndef SRC_FLASH_OPER_H_
 #define SRC_FLASH_OPER_H_
 
-#include <xqspipsu.h>
+#include "xqspipsu.h"
 
 /**************************** Type Definitions *******************************/
 

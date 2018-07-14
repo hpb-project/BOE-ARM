@@ -19,6 +19,7 @@
 #include <string.h>
 #include <time.h>
 #include "xil_types.h"
+#include "xparameters.h"
 #include "xil_exception.h"
 #include "xstreamer.h"
 #include "xil_cache.h"
@@ -26,32 +27,9 @@
 #include "xstatus.h"
 #include "community.h"
 
-#ifdef XPAR_INTC_0_DEVICE_ID
- #include "xintc.h"
-#else
- #include "xscugic.h"
-#endif
-
 #define FIFO_DEV_ID	   	XPAR_AXI_FIFO_0_DEVICE_ID
-
-#ifdef XPAR_INTC_0_DEVICE_ID
-#define INTC_DEVICE_ID          XPAR_INTC_0_DEVICE_ID
-#define FIFO_INTR_ID		XPAR_INTC_0_LLFIFO_0_VEC_ID
-#else
-#define INTC_DEVICE_ID          XPAR_SCUGIC_SINGLE_DEVICE_ID
-#define FIFO_INTR_ID            XPAR_FABRIC_LLFIFO_0_VEC_ID
-#endif
-
-#ifdef XPAR_INTC_0_DEVICE_ID
- #define INTC           XIntc
- #define INTC_HANDLER   XIntc_InterruptHandler
-#else
- #define INTC           XScuGic
- #define INTC_HANDLER   XScuGic_InterruptHandler
-#endif
-
 #define WORD_SIZE 		4
-#define MSG_POOL_SPACE 1000 	// 2M
+#define MSG_POOL_SPACE 1000 	// 1M
 #define HANDLE_MAGIC   0x1231
 
 
@@ -73,155 +51,12 @@ static int msg_pool_full(MsgPool *mp);
 static int msg_pool_empty(MsgPool *mp);
 static int msg_pool_push(MsgPool *mp, F_Package *pack);
 static A_Package* msg_new(int len);
-static void FifoHandler(void *data);
-
-static INTC Intc;
 
 
-
-
-/****************************************************************************/
-/**
-*
-* This function setups the interrupt system such that interrupts can occur
-* for the FIFO device. This function is application specific since the
-* actual system may or may not have an interrupt controller. The FIFO
-* could be directly connected to a processor without an interrupt controller.
-* The user should modify this function to fit the application.
-*
-* @param    InstancePtr contains a pointer to the instance of the FIFO
-*           component which is going to be connected to the interrupt
-*           controller.
-*
-* @return   XST_SUCCESS if successful, otherwise XST_FAILURE.
-*
-* @note     None.
-*
-****************************************************************************/
-int SetupInterruptSystem(INTC *IntcInstancePtr, u16 FifoIntrId, Xil_InterruptHandler iHandler, void* userdata)
-{
-	int Status;
-
-#ifdef XPAR_INTC_0_DEVICE_ID
-	/*
-	 * Initialize the interrupt controller driver so that it is ready to
-	 * use.
-	 */
-	Status = XIntc_Initialize(IntcInstancePtr, INTC_DEVICE_ID);
-	if (Status != XST_SUCCESS) {
-		return XST_FAILURE;
-	}
-
-
-	/*
-	 * Connect a device driver handler that will be called when an interrupt
-	 * for the device occurs, the device driver handler performs the
-	 * specific interrupt processing for the device.
-	 */
-	Status = XIntc_Connect(IntcInstancePtr, FifoIntrId,
-			   (XInterruptHandler)FifoHandler,
-			   (void *)InstancePtr);
-	if (Status != XST_SUCCESS) {
-		return XST_FAILURE;
-	}
-
-	/*
-	 * Start the interrupt controller such that interrupts are enabled for
-	 * all devices that cause interrupts, specific real mode so that
-	 * the FIFO can cause interrupts through the interrupt controller.
-	 */
-	Status = XIntc_Start(IntcInstancePtr, XIN_REAL_MODE);
-	if (Status != XST_SUCCESS) {
-		return XST_FAILURE;
-	}
-
-	/*
-	 * Enable the interrupt for the AXI FIFO device.
-	 */
-	XIntc_Enable(IntcInstancePtr, FifoIntrId);
-#else
-	XScuGic_Config *IntcConfig;
-
-	/*
-	 * Initialize the interrupt controller driver so that it is ready to
-	 * use.
-	 */
-	IntcConfig = XScuGic_LookupConfig(INTC_DEVICE_ID);
-	if (NULL == IntcConfig) {
-		return XST_FAILURE;
-	}
-
-	Status = XScuGic_CfgInitialize(IntcInstancePtr, IntcConfig,
-				IntcConfig->CpuBaseAddress);
-	if (Status != XST_SUCCESS) {
-		return XST_FAILURE;
-	}
-
-	XScuGic_SetPriorityTriggerType(IntcInstancePtr, FifoIntrId, 0xA0, 0x3);
-
-	/*
-	 * Connect the device driver handler that will be called when an
-	 * interrupt for the device occurs, the handler defined above performs
-	 * the specific interrupt processing for the device.
-	 */
-	Status = XScuGic_Connect(IntcInstancePtr, FifoIntrId,
-				(Xil_InterruptHandler)iHandler,
-				userdata);
-	if (Status != XST_SUCCESS) {
-		return Status;
-	}
-
-	XScuGic_Enable(IntcInstancePtr, FifoIntrId);
-#endif
-
-	/*
-	 * Initialize the exception table.
-	 */
-	Xil_ExceptionInit();
-
-	/*
-	 * Register the interrupt controller handler with the exception table.
-	 */
-	Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_INT,
-		(Xil_ExceptionHandler)INTC_HANDLER,
-		(void *)IntcInstancePtr);;
-
-	/*
-	 * Enable exceptions.
-	 */
-	Xil_ExceptionEnable();
-
-	return XST_SUCCESS;
-}
-/*****************************************************************************/
-/**
-*
-* This function disables the interrupts for the AXI FIFO device.
-*
-* @param	IntcInstancePtr is the pointer to the INTC component instance
-* @param	FifoIntrId is interrupt ID associated for the FIFO component
-*
-* @return	None
-*
-* @note		None
-*
-******************************************************************************/
-static void DisableIntrSystem(INTC *IntcInstancePtr, u16 FifoIntrId)
-{
-#ifdef XPAR_INTC_0_DEVICE_ID
-	/* Disconnect the interrupts */
-	XIntc_Disconnect(IntcInstancePtr, FifoIntrId);
-#else
-	XScuGic_Disconnect(IntcInstancePtr, FifoIntrId);
-#endif
-}
-
-int FifoInit(XLlFifo *InstancePtr, u16 DeviceId, void *userdata)
+int FifoInit(XLlFifo *InstancePtr, u16 DeviceId)
 {
 	XLlFifo_Config *Config;
 	int Status;
-	int i;
-	int err;
 	Status = XST_SUCCESS;
 
 	/* Initialize the Device Configuration Interface driver */
@@ -251,50 +86,46 @@ int FifoInit(XLlFifo *InstancePtr, u16 DeviceId, void *userdata)
 				XLlFifo_Status(InstancePtr));
 		return XST_FAILURE;
 	}
-
-	/*
-	 * Connect the Axi Streaming FIFO to the interrupt subsystem such
-	 * that interrupts can occur. This function is application specific.
-	 */
-	Status = SetupInterruptSystem(&Intc, FIFO_INTR_ID, FifoHandler, userdata);
-	if (Status != XST_SUCCESS) {
-		xil_printf("Failed intr setup\r\n");
-		return XST_FAILURE;
-	}
-
-	XLlFifo_IntEnable(InstancePtr, XLLF_INT_ALL_MASK);
+	return XST_SUCCESS;
 }
 
-/*****************************************************************************/
-/**
-*
-* TxSend routine, It will send the requested amount of data at the
-* specified addr.
-*
-* @param	InstancePtr is a pointer to the instance of the
-*		XLlFifo component.
-*
-* @param	SourceAddr is the address of the memory
-*
-* @return
-*		-XST_SUCCESS to indicate success
-*		-XST_FAILURE to indicate failure
-*
-* @note		None
-*
-******************************************************************************/
-int FifoTxSend(XLlFifo *InstancePtr, u32  *SourceAddr, int wordlen)
+int FifoSend(XLlFifo *InstancePtr, u8  *SourceAddr, int sendlen)
 {
-	int i = 0;
-	int txSpace = XLlFifo_iTxVacancy(InstancePtr);
-	if(wordlen > txSpace)
-		return XST_FAILURE;
-	for(i = 0; i < wordlen; i++){
-		XLlFifo_TxPutWord(InstancePtr, *(SourceAddr+(i*WORD_SIZE)));
+	int i;
+	u32 *wBuf;
+	u32 wlen;
+	int timeout = 2000000; // 2sec
+	if(sendlen%WORD_SIZE == 0){
+		wlen = sendlen/WORD_SIZE;
+	}else{
+		wlen = sendlen/WORD_SIZE + 1;
 	}
+	wBuf = (u32*)malloc(WORD_SIZE * wlen);
+	memset(wBuf, 0, WORD_SIZE * wlen);
+	memcpy((u8*)wBuf, SourceAddr, sendlen);
+	xil_printf(" Transmitting Data ... \r\n");
+
+	for(i=0 ; i < wlen ; i++){
+		/* Writing into the FIFO Transmit Port Buffer */
+		if( XLlFifo_iTxVacancy(InstancePtr) ){
+			XLlFifo_TxPutWord(InstancePtr,
+				*(wBuf+i));
+		}
+	}
+	free(wBuf);
 
 	/* Start Transmission by writing transmission length into the TLR */
-	XLlFifo_iTxSetLen(InstancePtr, (wordlen * WORD_SIZE));
+	XLlFifo_iTxSetLen(InstancePtr, (wlen*WORD_SIZE));
+
+	/* Check for Transmission completion */
+	while( !(XLlFifo_IsTxDone(InstancePtr)) ){
+		usleep(1000);
+		timeout -= 1000;
+		if(timeout < 0)
+		{
+			return 1;
+		}
+	}
 
 	/* Transmission Complete */
 	return XST_SUCCESS;
@@ -302,122 +133,42 @@ int FifoTxSend(XLlFifo *InstancePtr, u32  *SourceAddr, int wordlen)
 
 int FifoRelease(XLlFifo *InstancePtr)
 {
-	DisableIntrSystem(InstancePtr, FIFO_INTR_ID);
 	return XST_FAILURE;
 }
 
-/*****************************************************************************/
-/**
-*
-* This is the Receive handler callback function.
-*
-* @param	InstancePtr is a reference to the Fifo device instance.
-*
-* @return	None.
-*
-* @note		None.
-*
-******************************************************************************/
-static void FifoRecvHandler(XLlFifo *InstancePtr, MsgPool *mp)
+int FifoReceive (XLlFifo *InstancePtr, MsgPool *mp)
 {
 	int i;
 	u32 RxWord;
-	static u32 ReceiveLength;
+	u32 wlen = 0;
 	static F_Package fp;
+	u32 *dest = (u32*)(fp.data);
+	int status;
 
-	xil_printf("Receiving Data... \n\r");
+	//xil_printf(" Receiving data ....\n\r");
+	/* Read Recieve Length */
+	while(XLlFifo_iRxOccupancy(InstancePtr) > 0){
+		memset(&fp, 0x0, sizeof(fp));
+		wlen  = (XLlFifo_iRxGetLen(InstancePtr));
+		wlen = (wlen%WORD_SIZE == 0) ? (wlen/WORD_SIZE) : (wlen/WORD_SIZE+1);
 
-	/* Read Receive Length */
-	ReceiveLength = (XLlFifo_iRxGetLen(InstancePtr))/WORD_SIZE;
-
-	while(XLlFifo_iRxOccupancy(InstancePtr)) {
-		for (i=0; i < ReceiveLength; i++) {
-				RxWord = XLlFifo_RxGetWord(InstancePtr);
-				*(((u32*)(fp.data))+i) = RxWord;
+		/* Start Receiving */
+		for ( i=0; i < wlen; i++){
+			RxWord = XLlFifo_RxGetWord(InstancePtr);
+			*(dest+i) = RxWord;
+		}
+		xil_printf("fifo get a package.\r\n");
+		// push into msg pool
+		if(wlen > 0){
+			status = msg_pool_push(mp, &fp);
+			if(status != 0)
+				xil_printf("push failed.\r\n");
+			else
+				xil_printf("push success.\r\n");
 		}
 	}
 
-	// push into msg pool
-	if(ReceiveLength > 0){
-		msg_pool_push(mp, &fp);
-	}
-
-}
-
-/*****************************************************************************/
-/*
-*
-* This is the transfer Complete Interrupt handler function.
-*
-* This clears the transmit complete interrupt and set the done flag.
-*
-* @param	InstancePtr is a pointer to Instance of AXI FIFO device.
-*
-* @return	None
-*
-* @note		None
-*
-******************************************************************************/
-static void FifoSendHandler(XLlFifo *InstancePtr, MsgPool *mp)
-{
-	XLlFifo_IntClear(InstancePtr, XLLF_INT_TC_MASK);
-	mp->bSendComplete = 1; // send complete
-}
-
-/*****************************************************************************/
-/**
-*
-* This is the Error handler callback function and this function increments the
-* the error counter so that the main thread knows the number of errors.
-*
-* @param	InstancePtr is a pointer to Instance of AXI FIFO device.
-*
-* @param	Pending is a bitmask of the pending interrupts.
-*
-* @return	None.
-*
-* @note		None.
-*
-******************************************************************************/
-static void FifoErrorHandler(XLlFifo *InstancePtr, u32 Pending, MsgPool *mp)
-{
-	if (Pending & XLLF_INT_RPURE_MASK) {
-		XLlFifo_RxReset(InstancePtr);
-	} else if (Pending & XLLF_INT_RPORE_MASK) {
-		XLlFifo_RxReset(InstancePtr);
-	} else if(Pending & XLLF_INT_RPUE_MASK) {
-		XLlFifo_RxReset(InstancePtr);
-	} else if (Pending & XLLF_INT_TPOE_MASK) {
-		XLlFifo_TxReset(InstancePtr);
-		mp->bSendComplete = 2; // send error.
-	} else if (Pending & XLLF_INT_TSE_MASK) {
-	}
-}
-/*
- * Fifo interupt handler
- */
-static void FifoHandler(void *userdata)
-{
-	MsgPool *mp = (MsgPool*)userdata;
-	XLlFifo *InstancePtr = &(mp->fifoIns);
-	u32 Pending;
-	Pending = XLlFifo_IntPending(InstancePtr);
-	while (Pending) {
-		if (Pending & XLLF_INT_RC_MASK) {
-			FifoRecvHandler(InstancePtr, mp);
-			XLlFifo_IntClear(InstancePtr, XLLF_INT_RC_MASK);
-		}
-		else if (Pending & XLLF_INT_TC_MASK) {
-			FifoSendHandler(InstancePtr, mp);
-		}
-		else if (Pending & XLLF_INT_ERROR_MASK){
-			FifoErrorHandler(InstancePtr, Pending, mp);
-			XLlFifo_IntClear(InstancePtr, XLLF_INT_ERROR_MASK);
-		} else {
-			XLlFifo_IntClear(InstancePtr, Pending);
-		}
-		Pending = XLlFifo_IntPending(InstancePtr);
-	}
+	return XST_SUCCESS;
 }
 
 
@@ -452,15 +203,18 @@ static int msg_pool_empty(MsgPool *mp)
  */
 static int msg_pool_push(MsgPool *mp, F_Package *pack)
 {
+	int idx;
 	if(!msg_pool_full(mp)){
-		memcpy(&(mp->pool[mp->w_pos]), pack, sizeof(F_Package));
+		idx = mp->w_pos;
+		memset(&(mp->pool[idx]), pack, sizeof(F_Package));
+		memcpy(&(mp->pool[idx]), pack, sizeof(F_Package));
 		mp->w_pos = (mp->w_pos+1)%MSG_POOL_SPACE;
 		return 0;
 	}else{
+		xil_printf("msg pool is full.\r\n");
 		return 1;
 	}
 }
-
 
 
 int msg_pool_init(MsgPoolHandle *phandle)
@@ -471,12 +225,13 @@ int msg_pool_init(MsgPoolHandle *phandle)
 	mp->r_pos = 0;
 	mp->magic = HANDLE_MAGIC;
 	memset(mp->pool, 0, sizeof(mp->pool));
-	status = FifoInit(&(mp->fifoIns), FIFO_DEV_ID, mp);
+	status = FifoInit(&(mp->fifoIns), FIFO_DEV_ID);
 	if(status != XST_SUCCESS){
 		free(mp);
 		return XST_FAILURE;
 	}
 	*phandle = mp;
+	xil_printf("msg_pool_init success.\r\n");
 	return XST_SUCCESS;
 }
 
@@ -514,20 +269,18 @@ int msg_pool_fetch(MsgPoolHandle handle, A_Package **pack, u32 timeout_ms)
 	int pack_len = 0, bWait = 1, bGetMsg = 0;
 	u32 waitus = 0, timeout_us = timeout_ms *1000;
 	do{
+		FifoReceive(&mp->fifoIns, mp);
 		if(!msg_pool_empty(mp)){
-			F_Package *fp = &(mp->pool[mp->w_pos]);
-			A_Package *ap = (A_Package*)fp;
-			pack_len = ap->header.body_length + sizeof(A_Package);
-			*pack = axu_package_new(pack_len);
-			memcpy(*pack, ap, pack_len);
+			F_Package *fp = &(mp->pool[mp->r_pos]);
+			*pack = (A_Package*)fp;
 			mp->r_pos = (mp->r_pos+1)%MSG_POOL_SPACE;
 			bGetMsg = 1;
 			break;
 		}else{
 			if(waitus >= timeout_us)
 				break;
-			usleep(50);
-			waitus  += 50;
+			usleep(1000);
+			waitus  += 1000;
 		}
 	}while(bWait);
 	return bGetMsg ? 0 : 1;
@@ -546,20 +299,9 @@ int msg_pool_txsend(MsgPoolHandle handle, A_Package *pack, int bytelen)
 	if(mp->magic != HANDLE_MAGIC)
 		return -1;
 	u32 timeout_us = 20*1000; // 20ms
-	int status = FifoTxSend(&(mp->fifoIns), (u32*)pack, bytelen/4);
+	int status = FifoSend(&(mp->fifoIns), (u8*)pack, bytelen);
 	if(status != XST_SUCCESS){
 		return 1;
 	}
-	// wait send done.
-	do{
-		if(mp->bSendComplete == 1){
-			return XST_SUCCESS;
-		}else if(mp->bSendComplete == 2){
-			return 1;
-		}else if(mp->bSendComplete == 0){
-			usleep(20);
-			timeout_us -= 20;
-		}
-	}while(timeout_us > 0);
-	return 2;
+	return XST_SUCCESS;
 }

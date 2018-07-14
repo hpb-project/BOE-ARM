@@ -85,6 +85,7 @@ static int package_check(A_Package *pack)
 {
     static u64 err_num;
     int ret = 0;
+    xil_printf("header.magic_aacc = 0x%x, header.magic_ccaa = 0x%x.\r\n", pack->header.magic_aacc, pack->header.magic_ccaa);
     if(pack->header.magic_aacc == 0xaacc && pack->header.magic_ccaa == 0xccaa){
         // compare checksum.
         u32 cks = checksum(pack->data, pack->header.body_length);
@@ -108,20 +109,22 @@ int mainloop(void)
     int ret = 0;
     while(gHandle.bRun){
         A_Package *rcv = NULL;
-        u32 timeout_ms = 2;
+        u32 timeout_ms = 0;
         memset(msgbuf, 0, PACKAGE_MIN_SIZE);
-        if(0 != msg_pool_fetch(&gHandle.gMsgPoolIns, &rcv, timeout_ms)) {
+        if(0 != msg_pool_fetch(gHandle.gMsgPoolIns, &rcv, timeout_ms)) {
             // have no msg.
+        	usleep(1000);
         }else {
             ret = package_check(rcv);
             if(0 == ret)
             {
                 ACmd cmd = rcv->header.acmd;
+                xil_printf("main: get cmd = %d.\r\n", cmd);
                 Processor *pcs = processor_get(cmd);
                 if(pcs == NULL){
                 	errmsg = axu_get_error_msg(A_UNKNOWN_CMD);
-                	strcat(msgbuf, errmsg);
-                	sprintf(msgbuf+strlen(errmsg), ": command is %d.", cmd);
+                	strncat(msgbuf, errmsg, PACKAGE_MIN_SIZE);
+                	snprintf(msgbuf+strlen(errmsg), PACKAGE_MIN_SIZE - strlen(errmsg), ": command is %d.", cmd);
                 	make_response_error(rcv, ACMD_BP_RES_ERR, A_UNKNOWN_CMD, msgbuf, strlen(msgbuf), send);
                 }else{
                 	if(pcs->pre_check == NULL){
@@ -137,22 +140,23 @@ int mainloop(void)
                 		continue;
                 }
             }else if(2 == ret){
+            	xil_printf("package checksum error.\r\n");
                 // checksum error.
             	errmsg = axu_get_error_msg(A_CHECKSUM_ERROR);
-            	strcat(msgbuf, errmsg);
-            	sprintf(msgbuf+strlen(errmsg), ": package body checksum not macth.");
+            	strncat(msgbuf, errmsg, PACKAGE_MIN_SIZE);
+            	snprintf(msgbuf+strlen(errmsg), PACKAGE_MIN_SIZE - strlen(errmsg), ": package body checksum not macth.");
                 make_response_error(rcv, ACMD_BP_RES_ERR, A_CHECKSUM_ERROR, msgbuf, strlen(msgbuf), send);
             }else if(1 == ret){
+            	xil_printf("package magic error.\r\n");
                 // magic error.
             	errmsg = axu_get_error_msg(A_MAGIC_ERROR);
-            	strcat(msgbuf, errmsg);
-            	sprintf(msgbuf+strlen(errmsg), ": correct magic is 0x%x and 0x%x.", AXU_MAGIC_START, AXU_MAGIC_END);
+            	strncat(msgbuf, errmsg, PACKAGE_MIN_SIZE);
+            	snprintf(msgbuf+strlen(errmsg), PACKAGE_MIN_SIZE - strlen(errmsg), ": correct magic is 0x%x and 0x%x.", AXU_MAGIC_START, AXU_MAGIC_END);
                 make_response_error(rcv, ACMD_BP_RES_ERR, A_MAGIC_ERROR, msgbuf, strlen(msgbuf), send);
             }
+
             msg_pool_txsend(gHandle.gMsgPoolIns, send, PACKAGE_MIN_SIZE);
         }
-        // release rcv.
-        axu_package_free(rcv);
     }
     free(msgbuf);
     return 0;
@@ -163,13 +167,8 @@ int main()
     int status = 0;
     init_platform();
 
-#if 0
+#if 1
     // 1. some init.
-    status = FlashInit(&gHandle.gFlashInstance);
-    if(status != XST_SUCCESS){
-        xil_printf("FlashInit failed.\n\r");
-        return -1;
-    }
     status = env_init();
     if(status != XST_SUCCESS){
         xil_printf("Env init failed.\n\r");
@@ -180,7 +179,8 @@ int main()
         xil_printf("env get failed.\n\r");
         return -1;
     }
-    status = msg_pool_init(&gHandle.gMsgPoolIns);
+
+    status = msg_pool_init(&(gHandle.gMsgPoolIns));
     if(status != XST_SUCCESS){
         xil_printf("fifo init failed.\n\r");
         return -1;
@@ -199,7 +199,7 @@ int main()
     // 3. enter mainloop.
     mainloop();
 #endif
-    networkinit();
+
 
 
 

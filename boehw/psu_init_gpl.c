@@ -17202,13 +17202,13 @@ unsigned long psu_afi_config(void)
     * Select the 32/64/128-bit data width selection for the Slave 0 00: 32-bit
     *  AXI data width (default) 01: 64-bit AXI data width 10: 128-bit AXI data
     *  width 11: reserved
-    *  PSU_FPD_SLCR_AFI_FS_DW_SS0_SEL                              0x1
+    *  PSU_FPD_SLCR_AFI_FS_DW_SS0_SEL                              0x0
 
     * afi fs SLCR control register. This register is static and should not be
     * modified during operation.
-    * (OFFSET, MASK, VALUE)      (0XFD615000, 0x00000300U ,0x00000100U)
+    * (OFFSET, MASK, VALUE)      (0XFD615000, 0x00000300U ,0x00000000U)
     */
-	PSU_Mask_Write(FPD_SLCR_AFI_FS_OFFSET, 0x00000300U, 0x00000100U);
+	PSU_Mask_Write(FPD_SLCR_AFI_FS_OFFSET, 0x00000300U, 0x00000000U);
 /*##################################################################### */
 
 
