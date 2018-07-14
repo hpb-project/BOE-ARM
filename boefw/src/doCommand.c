@@ -111,10 +111,10 @@ static int checkVersion(A_Package *p)
 	}
 	return 1;
 }
-
 static PRET doTransportStart(A_Package *p, A_Package *res)
 {
     u32 fileid = 0, datalen = 0;
+
     char *errmsg = NULL;
     char msgbuf[PACKAGE_MIN_SIZE] = {0};
     FPartation fp;
@@ -146,12 +146,14 @@ static PRET doTransportStart(A_Package *p, A_Package *res)
 		return PRET_ERROR;
     }
 
+    // new a blockdata info.
     info = (BlockDataInfo*)malloc(datalen + sizeof(BlockDataInfo));
     memset(info, 0x0, datalen + sizeof(BlockDataInfo));
     info->uniqueId = fileid;
     info->checksum = GetStartCHK(p);
     info->dataLen = datalen;
     info->flag = UPGRADE_RECVING;
+
     // check datalen.
     if(usage == BD_USE_UPGRADE_FW){
         FM_GetPartation(FM_IMAGE1_PNAME, &fp);
@@ -181,26 +183,27 @@ static PRET doTransportStart(A_Package *p, A_Package *res)
 }
 
 #define TRANSPORT_MID_ID_SIZE (4)
-#define TRANSPORT_MID_OFFSET_SIZE (2)
+#define TRANSPORT_MID_OFFSET_SIZE (4)
 #define TRANSPORT_MID_DATA_OFFSET (TRANSPORT_MID_ID_SIZE+TRANSPORT_MID_OFFSET_SIZE)
 #define GetMidID(pack)        (*((u32*)(&pack->data[0])))
-#define GetMidOffset(pack)    (*((u16*)(&pack->data[0+4])))
-#define GetMidDatalen(pack)   ((pack)->header.body_length - (0+4+2))
+#define GetMidOffset(pack)    (*((u32*)(&pack->data[0+4])))
+#define GetMidDatalen(pack)   ((pack)->header.body_length - (0+4+4))
 
 static PRET doTransportMid(A_Package *p, A_Package *res)
 {
     u32 fileid = 0, datalen = 0;
-    u16 offset = 0;
+    u32 offset = 0;
 
     char *errmsg = NULL;
     char msgbuf[PACKAGE_MIN_SIZE] = {0};
     fileid = GetMidID(p);
     offset = GetMidOffset(p);
     datalen = GetMidDatalen(p);
-
+    xil_printf("do %s, fileid = 0x%x, offset = %d.\r\n", __FUNCTION__, fileid, offset);
     // find info.
     BlockDataInfo *info = findInfo(&(gHandle.gBlockDataList), fileid);
     if(info == NULL){
+    	xil_printf("do %s, not find fileid 0x%x.\r\n", __FUNCTION__, fileid);
         errmsg = axu_get_error_msg(A_MID_UID_NOT_FOUND);
         strcat(msgbuf, errmsg);
 		sprintf(msgbuf+strlen(errmsg), ": uid is %u.", fileid);
@@ -208,6 +211,7 @@ static PRET doTransportMid(A_Package *p, A_Package *res)
         return PRET_ERROR;
     }
     if(info->flag == UPGRADE_ABORT){
+    	xil_printf("do %s, upgrade has been aborted.\r\n", __FUNCTION__);
     	errmsg = axu_get_error_msg(A_UPGRADE_STATE_ERROR);
 		strcat(msgbuf, errmsg);
 		sprintf(msgbuf+strlen(errmsg), ": upgrade has been aborted.");
@@ -232,11 +236,11 @@ static PRET doTransportMid(A_Package *p, A_Package *res)
 }
 
 #define TRANSPORT_FIN_ID_SIZE (4)
-#define TRANSPORT_FIN_OFFSET_SIZE (2)
+#define TRANSPORT_FIN_OFFSET_SIZE (4)
 #define TRANSPORT_FIN_DATA_OFFSET (TRANSPORT_MID_ID_SIZE+TRANSPORT_MID_OFFSET_SIZE)
 #define GetFinID(pack)        (*((u32*)(&pack->data[0])))
-#define GetFinOffset(pack)    (*((u16*)(&pack->data[0+4])))
-#define GetFinDatalen(pack)   ((pack)->header.body_length - (0+4+2))
+#define GetFinOffset(pack)    (*((u32*)(&pack->data[0+4])))
+#define GetFinDatalen(pack)   ((pack)->header.body_length - (0+4+4))
 static PRET doTransportFin(A_Package *p, A_Package *res)
 {
     u32 fileid = 0, datalen = 0;
@@ -248,9 +252,11 @@ static PRET doTransportFin(A_Package *p, A_Package *res)
     offset = GetFinOffset(p);
     datalen = GetFinDatalen(p);
 
+    xil_printf("do %s, fileid = 0x%x, offset = %d.\r\n", __FUNCTION__, fileid, offset);
     // find info.
     BlockDataInfo *info = findInfo(&(gHandle.gBlockDataList), fileid);
     if(info == NULL){
+    	xil_printf("do %s, not find fileid.\r\n", __FUNCTION__);
         errmsg = axu_get_error_msg(A_MID_UID_NOT_FOUND);
         strcat(msgbuf, errmsg);
 		sprintf(msgbuf+strlen(errmsg), ": uid is %u.", fileid);
@@ -269,15 +275,20 @@ static PRET doTransportFin(A_Package *p, A_Package *res)
     // restructure data.
     memcpy(&(info->data[offset]), &(p->data[TRANSPORT_MID_DATA_OFFSET]), datalen);
     info->recLen += datalen;
+
+    // recheck full file content.
     u32 chk = checksum(info->data, info->dataLen);
     if(chk != info->checksum){
+    	xil_printf("do %s, full file checksum check failed.\r\n", __FUNCTION__);
         errmsg = axu_get_error_msg(A_FIN_CHECKSUM_ERROR);
         strcat(msgbuf, errmsg);
 		sprintf(msgbuf+strlen(errmsg), ": checksum not match.");
         make_response_error(p, ACMD_BP_RES_ERR, A_FIN_CHECKSUM_ERROR, msgbuf, strlen(msgbuf), res);
         return PRET_ERROR;
     }
+    xil_printf("do %s, full file checksum check passed.\r\n", __FUNCTION__);
     if(info->flag == UPGRADE_ABORT){
+    	xil_printf("do %s, upgrade has been aborted.\r\n", __FUNCTION__);
 		errmsg = axu_get_error_msg(A_UPGRADE_STATE_ERROR);
 		strcat(msgbuf, errmsg);
 		sprintf(msgbuf+strlen(errmsg), ": upgrade has been aborted.");
@@ -285,6 +296,7 @@ static PRET doTransportFin(A_Package *p, A_Package *res)
 		return PRET_ERROR;
 	}
     info->flag = UPGRADE_RECV_FIN;
+    xil_printf("do %s, received fileid = 0x%x.\r\n", __FUNCTION__, fileid);
 
     make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
     send_upgrade_progress(80, "receive finished");
@@ -303,10 +315,12 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
     char *errmsg = NULL;
     char msgbuf[PACKAGE_MIN_SIZE] = {0};
     fileid = GetUpgradeID(p);
+    xil_printf("do %s, fileid = 0x%x.\r\n", __FUNCTION__, fileid);
 
     // find info.
     BlockDataInfo *info = findInfo(&(gHandle.gBlockDataList), fileid);
     if(info == NULL){
+    	xil_printf("do %s, not find fileid .\r\n", __FUNCTION__);
         errmsg = axu_get_error_msg(A_MID_UID_NOT_FOUND);
         strcat(msgbuf, errmsg);
 		sprintf(msgbuf+strlen(errmsg), ": uid is %u.", fileid);
@@ -314,6 +328,7 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
         return PRET_ERROR;
     }
     if(info->flag == UPGRADE_ABORT){
+    	xil_printf("do %s, upgrade has been aborted.\r\n", __FUNCTION__);
 		errmsg = axu_get_error_msg(A_UPGRADE_STATE_ERROR);
 		strcat(msgbuf, errmsg);
 		sprintf(msgbuf+strlen(errmsg), ": upgrade has been aborted.");
@@ -322,6 +337,7 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
 	}
 
     if(info->flag != UPGRADE_RECV_FIN){
+    	xil_printf("do %s, file not receive finish.\r\n", __FUNCTION__);
     	errmsg = axu_get_error_msg(A_UPGRADE_STATE_ERROR);
     	strcat(msgbuf, errmsg);
 		sprintf(msgbuf+strlen(errmsg), ": state is %d, can't do upgrade.", info->flag);
@@ -333,6 +349,8 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
     FM_GetPartation(FM_GOLDEN_PNAME, &fp_golden);
     FM_GetPartation(FM_IMAGE1_PNAME, &fp_img1);
     FM_GetPartation(FM_IMAGE2_PNAME, &fp_img2);
+
+
     if(info->eDataUsage == BD_USE_UPGRADE_FW){
         upgradeAddr = fp_golden.pAddr;
         writeLen = fp_golden.pSize;
@@ -345,6 +363,7 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
             writeLen = fp_img1.pSize;
         }
     }
+
     if(info->flag == UPGRADE_ABORT){
 		errmsg = axu_get_error_msg(A_UPGRADE_STATE_ERROR);
 		strcat(msgbuf, errmsg);
@@ -352,7 +371,10 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
 		make_response_error(p, ACMD_BP_RES_ERR, A_UPGRADE_STATE_ERROR, msgbuf, strlen(msgbuf), res);
 		return PRET_ERROR;
 	}
+
     info->flag = UPGRADE_ERASEING_FLASH;
+
+    xil_printf("do %s, start erase flash 0x%x, len = 0x%x.\r\n", __FUNCTION__, upgradeAddr, writeLen);
     // flash erase.
     if(0 != FlashErase(&(gHandle.gFlashInstance), upgradeAddr, writeLen)){
         xil_printf("Upgrade: flash erase error, addr:0x%x, size:0x%x.\r\n", upgradeAddr, writeLen);
@@ -361,6 +383,7 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
         return PRET_ERROR;
     }
     send_upgrade_progress(88, "flash erase finished");
+
     // check upgrade abort flag.
 	if(info->flag == UPGRADE_ABORT){
 		errmsg = axu_get_error_msg(A_UPGRADE_STATE_ERROR);
@@ -369,10 +392,12 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
 		make_response_error(p, ACMD_BP_RES_ERR, A_UPGRADE_STATE_ERROR, msgbuf, strlen(msgbuf), res);
 		return PRET_ERROR;
 	}
+
 	info->flag = UPGRADE_WRITEING_FLASH;
+	xil_printf("do %s, start write flash 0x%x, len = 0x%x.\r\n", __FUNCTION__, upgradeAddr, info->dataLen);
     // write to flash
     if(0 != FlashWrite(&(gHandle.gFlashInstance), upgradeAddr, info->dataLen, info->data)){
-        xil_printf("Upgrade: flash write error, addr:0x%x, size:0x%x.\r\n", upgradeAddr, info->data);
+        xil_printf("Upgrade: flash write error, addr:0x%x, size:0x%x.\r\n", upgradeAddr, info->dataLen);
         errmsg = axu_get_error_msg(A_UPGRADE_FLASH_WRITE_ERROR);
         make_response_error(p, ACMD_BP_RES_ERR, A_UPGRADE_FLASH_WRITE_ERROR, errmsg, strlen(errmsg), res);
         return PRET_ERROR;
@@ -383,12 +408,15 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
     gHandle.gEnv.bootaddr = upgradeAddr;
     gHandle.gEnv.update_flag = UPGRADE_REBOOT;
     if(XST_SUCCESS == env_update(&(gHandle.gEnv))){
+    	xil_printf("do %s, env_upgrade finished.\r\n", __FUNCTION__);
     	make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
     }else{
+    	xil_printf("do %s, env_upgrade failed.\r\n", __FUNCTION__);
     	errmsg = axu_get_error_msg(A_ENV_UPDATE_ERROR);
 		make_response_error(p, ACMD_BP_RES_ERR, A_ENV_UPDATE_ERROR, errmsg, strlen(errmsg), res);
 		return PRET_ERROR;
     }
+    xil_printf("do %s, upgrade come to reset.\r\n", __FUNCTION__);
 
     GoReset();
     return PRET_OK;
@@ -401,10 +429,11 @@ static PRET doUpgradeAbort(A_Package *p, A_Package *res)
     char *errmsg = NULL;
     char msgbuf[PACKAGE_MIN_SIZE] = {0};
     fileid = GetUpgradeID(p);
-
+    xil_printf("do %s, fileid = 0x%x.\r\n", __FUNCTION__, fileid);
     // find info.
     BlockDataInfo *info = findInfo(&(gHandle.gBlockDataList), fileid);
     if(info == NULL){
+    	xil_printf("do %s, not find fileid.\r\n", __FUNCTION__);
         errmsg = axu_get_error_msg(A_MID_UID_NOT_FOUND);
         strcat(msgbuf, errmsg);
 		sprintf(msgbuf+strlen(errmsg), ": uid is %u.", fileid);
@@ -413,6 +442,7 @@ static PRET doUpgradeAbort(A_Package *p, A_Package *res)
     }
     if(info->flag < UPGRADE_WRITEING_FLASH){
         info->flag = UPGRADE_ABORT;
+        xil_printf("do %s, upgrade abort.\r\n", __FUNCTION__);
         make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
     }else {
         errmsg = axu_get_error_msg(A_UPGRADE_ABORT_ERROR);

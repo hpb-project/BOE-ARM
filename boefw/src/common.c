@@ -51,9 +51,10 @@ BlockDataInfo *findInfo(BlockDataInfo *head, u32 uniqueId)
 }
 int addInfo(BlockDataInfo *head, BlockDataInfo *nInfo)
 {
-    BlockDataInfo *p = head;
+    BlockDataInfo *p = head, *last = head;
     while(p!=NULL){
-            p = p->next;
+    	last = p;
+        p = p->next;
     };
     p->next = nInfo;
     return 0;

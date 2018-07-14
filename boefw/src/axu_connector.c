@@ -28,12 +28,12 @@ static uint16_t  g_sequence_id = 0;
 
 A_Package* axu_package_new(int len)
 {
-	len += sizeof(A_Package);
+	//len += sizeof(A_Package);
 
     if(len > PACKAGE_MAX_SIZE)
         return NULL;
 
-    A_Package * pack = (A_Package*)malloc(len);
+    A_Package * pack = (A_Package*)malloc(len + sizeof(A_Package));
     if(pack != NULL)
         pack->header.body_length = len;
 
