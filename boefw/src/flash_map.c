@@ -1,4 +1,4 @@
-// Last Update:2018-06-06 09:17:55
+// Last Update:2018-07-16 20:24:47
 /**
  * @file flash_map.c
  * @brief 
@@ -47,6 +47,14 @@ static FPartation gDefPartationList[] = {
     {3, FM_IMAGE2_PNAME, IMAGE_2_OFFSET, IMAGE_2_SIZE},
 };
 
+int FM_Print(FPartation *p)
+{
+    xil_printf("p->pId = %d.\r\n", p->pId);
+    xil_printf("p->pName = %s.\r\n", p->pName);
+    xil_printf("p->pAddr = 0x%x.\r\n", p->pAddr);
+    xil_printf("p->pSize = 0x%x.\r\n", p->pSize);
+    return 0;
+}
 
 int FM_GetPartation(char *pName, FPartation *partation)
 {
@@ -55,6 +63,8 @@ int FM_GetPartation(char *pName, FPartation *partation)
     {
         FPartation *fp = &(gDefPartationList[i]);
         if(strcmp(fp->pName, pName) == 0){
+            xil_printf("copy fpinfo %s.\r\n", fp->pName);
+            FM_Print(fp);
             memcpy(partation, fp, sizeof(FPartation));
             return XST_SUCCESS;
         }

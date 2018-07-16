@@ -92,6 +92,10 @@ static int package_check(A_Package *pack)
         if(cks != pack->checksum){
             ret = 2;
             err_num++;
+            //for(int j = 0; j < pack->header.body_length; j++)
+            //{
+            //    xil_printf("r[%d]=0x%02x\r\n", j, pack->data[j]);
+            //}
         }
     }else {
         ret = 1;

@@ -56,7 +56,7 @@ int addInfo(BlockDataInfo *head, BlockDataInfo *nInfo)
     	last = p;
         p = p->next;
     };
-    p->next = nInfo;
+    last->next = nInfo;
     return 0;
 }
 

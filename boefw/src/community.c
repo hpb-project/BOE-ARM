@@ -39,12 +39,12 @@ typedef struct F_Package{
 }F_Package;
 
 typedef struct MsgPool{
-	F_Package pool[MSG_POOL_SPACE];
 	int w_pos;
 	int r_pos;
 	u16 magic;
-	XLlFifo fifoIns;
 	u16 bSendComplete;
+	XLlFifo fifoIns;
+	F_Package pool[MSG_POOL_SPACE];
 }MsgPool;
 
 static int msg_pool_full(MsgPool *mp);
@@ -103,7 +103,6 @@ int FifoSend(XLlFifo *InstancePtr, u8  *SourceAddr, int sendlen)
 	wBuf = (u32*)malloc(WORD_SIZE * wlen);
 	memset(wBuf, 0, WORD_SIZE * wlen);
 	memcpy((u8*)wBuf, SourceAddr, sendlen);
-	xil_printf(" Transmitting Data ... \r\n");
 
 	for(i=0 ; i < wlen ; i++){
 		/* Writing into the FIFO Transmit Port Buffer */
@@ -150,7 +149,19 @@ int FifoReceive (XLlFifo *InstancePtr, MsgPool *mp)
 	while(XLlFifo_iRxOccupancy(InstancePtr) > 0){
 		memset(&fp, 0x0, sizeof(fp));
 		wlen  = (XLlFifo_iRxGetLen(InstancePtr));
-		wlen = (wlen%WORD_SIZE == 0) ? (wlen/WORD_SIZE) : (wlen/WORD_SIZE+1);
+        if(wlen%WORD_SIZE == 0)
+        {
+            wlen = wlen/WORD_SIZE;
+        }
+        else
+        {
+            wlen = wlen/WORD_SIZE + 1;
+        }
+        if((wlen*WORD_SIZE) > sizeof(F_Package))
+        {
+            xil_printf("package size(%d) > F_Package size(%d).\r\n", wlen*WORD_SIZE, sizeof(F_Package));
+            while(1);
+        }
 
 		/* Start Receiving */
 		for ( i=0; i < wlen; i++){
@@ -206,7 +217,15 @@ static int msg_pool_push(MsgPool *mp, F_Package *pack)
 	int idx;
 	if(!msg_pool_full(mp)){
 		idx = mp->w_pos;
-		memset(&(mp->pool[idx]), pack, sizeof(F_Package));
+        xil_printf("push package to idx = %d.\r\n", idx);
+		memset(&(mp->pool[idx]), 0x0, sizeof(F_Package));
+        //if(mp->w_pos == 999 || mp->w_pos == 0)
+        //{
+        //    for(int j = 0; j < sizeof(F_Package); j++)
+        //    {
+        //        xil_printf("p[%d]=0x%02x\r\n", j, pack->data[j]);
+        //    }
+        //}
 		memcpy(&(mp->pool[idx]), pack, sizeof(F_Package));
 		mp->w_pos = (mp->w_pos+1)%MSG_POOL_SPACE;
 		return 0;
@@ -272,6 +291,7 @@ int msg_pool_fetch(MsgPoolHandle handle, A_Package **pack, u32 timeout_ms)
 		FifoReceive(&mp->fifoIns, mp);
 		if(!msg_pool_empty(mp)){
 			F_Package *fp = &(mp->pool[mp->r_pos]);
+            xil_printf("r_pos = %d, w_pos = %d.\r\n", mp->r_pos, mp->w_pos);
 			*pack = (A_Package*)fp;
 			mp->r_pos = (mp->r_pos+1)%MSG_POOL_SPACE;
 			bGetMsg = 1;

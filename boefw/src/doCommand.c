@@ -148,11 +148,13 @@ static PRET doTransportStart(A_Package *p, A_Package *res)
 
     // new a blockdata info.
     info = (BlockDataInfo*)malloc(datalen + sizeof(BlockDataInfo));
+    xil_printf("info = 0x%p\r\n", info);
     memset(info, 0x0, datalen + sizeof(BlockDataInfo));
     info->uniqueId = fileid;
     info->checksum = GetStartCHK(p);
     info->dataLen = datalen;
     info->flag = UPGRADE_RECVING;
+    info->eDataUsage = usage;
 
     // check datalen.
     if(usage == BD_USE_UPGRADE_FW){
@@ -184,10 +186,11 @@ static PRET doTransportStart(A_Package *p, A_Package *res)
 
 #define TRANSPORT_MID_ID_SIZE (4)
 #define TRANSPORT_MID_OFFSET_SIZE (4)
-#define TRANSPORT_MID_DATA_OFFSET (TRANSPORT_MID_ID_SIZE+TRANSPORT_MID_OFFSET_SIZE)
+#define TRANSPORT_MID_LEN_SIZE (4)
+#define TRANSPORT_MID_DATA_OFFSET (TRANSPORT_MID_ID_SIZE+TRANSPORT_MID_OFFSET_SIZE+TRANSPORT_MID_LEN_SIZE)
 #define GetMidID(pack)        (*((u32*)(&pack->data[0])))
 #define GetMidOffset(pack)    (*((u32*)(&pack->data[0+4])))
-#define GetMidDatalen(pack)   ((pack)->header.body_length - (0+4+4))
+#define GetMidDatalen(pack)   (*((u32*)(&pack->data[0+4+4])))
 
 static PRET doTransportMid(A_Package *p, A_Package *res)
 {
@@ -202,6 +205,7 @@ static PRET doTransportMid(A_Package *p, A_Package *res)
     xil_printf("do %s, fileid = 0x%x, offset = %d.\r\n", __FUNCTION__, fileid, offset);
     // find info.
     BlockDataInfo *info = findInfo(&(gHandle.gBlockDataList), fileid);
+    xil_printf("info = 0x%p\r\n", info);
     if(info == NULL){
     	xil_printf("do %s, not find fileid 0x%x.\r\n", __FUNCTION__, fileid);
         errmsg = axu_get_error_msg(A_MID_UID_NOT_FOUND);
@@ -228,6 +232,7 @@ static PRET doTransportMid(A_Package *p, A_Package *res)
         return PRET_ERROR;
     }
     // restructure data.
+    xil_printf("offset = %d, len = %d.\r\n", offset, datalen);
     memcpy(&(info->data[offset]), &(p->data[TRANSPORT_MID_DATA_OFFSET]), datalen);
     info->recLen += datalen;
     make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
@@ -237,10 +242,11 @@ static PRET doTransportMid(A_Package *p, A_Package *res)
 
 #define TRANSPORT_FIN_ID_SIZE (4)
 #define TRANSPORT_FIN_OFFSET_SIZE (4)
-#define TRANSPORT_FIN_DATA_OFFSET (TRANSPORT_MID_ID_SIZE+TRANSPORT_MID_OFFSET_SIZE)
+#define TRANSPORT_FIN_LEN_SIZE (4)
+#define TRANSPORT_FIN_DATA_OFFSET (TRANSPORT_FIN_ID_SIZE+TRANSPORT_FIN_OFFSET_SIZE + TRANSPORT_FIN_LEN_SIZE)
 #define GetFinID(pack)        (*((u32*)(&pack->data[0])))
 #define GetFinOffset(pack)    (*((u32*)(&pack->data[0+4])))
-#define GetFinDatalen(pack)   ((pack)->header.body_length - (0+4+4))
+#define GetFinDatalen(pack)   (*((u32*)(&pack->data[0+4+4])))
 static PRET doTransportFin(A_Package *p, A_Package *res)
 {
     u32 fileid = 0, datalen = 0;
@@ -255,6 +261,7 @@ static PRET doTransportFin(A_Package *p, A_Package *res)
     xil_printf("do %s, fileid = 0x%x, offset = %d.\r\n", __FUNCTION__, fileid, offset);
     // find info.
     BlockDataInfo *info = findInfo(&(gHandle.gBlockDataList), fileid);
+    xil_printf("info = %p\r\n", info);
     if(info == NULL){
     	xil_printf("do %s, not find fileid.\r\n", __FUNCTION__);
         errmsg = axu_get_error_msg(A_MID_UID_NOT_FOUND);
@@ -273,11 +280,17 @@ static PRET doTransportFin(A_Package *p, A_Package *res)
         return PRET_ERROR;
     }
     // restructure data.
-    memcpy(&(info->data[offset]), &(p->data[TRANSPORT_MID_DATA_OFFSET]), datalen);
+    xil_printf("offset = %d, datalen = %d\r\n", offset, datalen);
+    memcpy(info->data+offset, p->data+(TRANSPORT_MID_DATA_OFFSET), datalen);
     info->recLen += datalen;
 
     // recheck full file content.
     u32 chk = checksum(info->data, info->dataLen);
+    xil_printf("checksum = 0x%x, info->chk = 0x%x\r\n", chk, info->checksum);
+//    for(u32 i = 0; i  < info->dataLen; i++)
+//    {
+//        xil_printf("d[%d] = 0x%02x\r\n", i, info->data[i]);
+//    }
     if(chk != info->checksum){
     	xil_printf("do %s, full file checksum check failed.\r\n", __FUNCTION__);
         errmsg = axu_get_error_msg(A_FIN_CHECKSUM_ERROR);
@@ -351,7 +364,7 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
     FM_GetPartation(FM_IMAGE2_PNAME, &fp_img2);
 
 
-    if(info->eDataUsage == BD_USE_UPGRADE_FW){
+    if(info->eDataUsage == BD_USE_UPGRADE_GOLDEN){
         upgradeAddr = fp_golden.pAddr;
         writeLen = fp_golden.pSize;
     }else if(info->eDataUsage == BD_USE_UPGRADE_FW) {
@@ -363,6 +376,9 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
             writeLen = fp_img1.pSize;
         }
     }
+    FM_Print(&fp_golden);
+    FM_Print(&fp_img1);
+    FM_Print(&fp_img2);
 
     if(info->flag == UPGRADE_ABORT){
 		errmsg = axu_get_error_msg(A_UPGRADE_STATE_ERROR);
@@ -418,7 +434,7 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
     }
     xil_printf("do %s, upgrade come to reset.\r\n", __FUNCTION__);
 
-    GoReset();
+    //GoReset();
     return PRET_OK;
 }
 
@@ -578,10 +594,6 @@ static PRET doGetBindAccount(A_Package *p, A_Package *res)
 	int offset = 0;
 	axu_package_init(res, p, ACMD_BP_RES_ACK);
 	axu_set_data(res, offset, gHandle.gEnv.bindAccount, sizeof(gHandle.gEnv.bindAccount));
-	for(int i = 0; i< sizeof(gEmpty256); i++)
-	{
-		xil_printf("ba[%d] = 0x%02x\r\n", i, gHandle.gEnv.bindAccount[i]);
-	}
 
 	offset += sizeof(gHandle.gEnv.bindAccount);
 	axu_finish_package(res);
@@ -618,10 +630,10 @@ static PRET doBindAccount(A_Package *p, A_Package *res)
 	char msgbuf[PACKAGE_MIN_SIZE] = {0};
 
 	xil_printf("do: %s\r\n", __FUNCTION__);
-	for(int i = 0; i< sizeof(gEmpty256); i++)
-	{
-		xil_printf("ra[%d] = 0x%02x\r\n", i, p->data[i]);
-	}
+	//for(int i = 0; i< sizeof(gEmpty256); i++)
+	//{
+	//	xil_printf("ra[%d] = 0x%02x\r\n", i, p->data[i]);
+	//}
 	memcpy(gHandle.gEnv.bindAccount, p->data, sizeof(gEmpty256));
 	if(env_update(&(gHandle.gEnv)) == 0) {
 		gHandle.gBindAccount = 1;

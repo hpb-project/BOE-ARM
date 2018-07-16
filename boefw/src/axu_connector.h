@@ -19,7 +19,7 @@
 #include <xil_types.h>
 
 
-#define PACKAGE_MAX_SIZE 	(1024)   // 1KB
+#define PACKAGE_MAX_SIZE 	(1000)   // 1KB
 #define PACKAGE_MIN_SIZE 	(100)
 
 #define AXU_MAGIC_START (0xaacc)
