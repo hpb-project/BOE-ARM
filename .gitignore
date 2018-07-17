@@ -47,6 +47,7 @@ modules.builtin
 !.project
 !.cproject
 !.sdkproject
+!./boebsp/psu_cortexa53_0/lib/*.a
 
 # cscope files
 cscope.*

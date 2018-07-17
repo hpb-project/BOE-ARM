@@ -8,6 +8,7 @@
  */
 #include "flash_map.h"
 #include "xstatus.h"
+#include <string.h>
 #include "compiler.h"
 
 #define TEST_HPB
