@@ -11,6 +11,10 @@
 #include "xqspipsu.h"
 
 /**************************** Type Definitions *******************************/
+#include "xparameters.h"	/* SDK generated parameters */
+#include "xqspipsu.h"		/* QSPIPSU device driver */
+#include "xil_printf.h"
+#include "xil_cache.h"
 
 typedef struct{
 	u32 SectSize;		/* Individual sector size or
@@ -30,13 +34,14 @@ typedef struct{
 
 
 int FlashInit(XQspiPsu *QspiPsuInstancePtr);
-
 int FlashReadID(XQspiPsu *QspiPsuPtr);
-int FlashErase(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount);
-int FlashGetInfo(XQspiPsu *QspiPsuPtr, FlashInfo *info);
-int FlashWriteInPage(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 Command,
-				u8 *WriteBfrPtr);
-int FlashRead(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount,  u8 *ReadBfrPtr);
+int FlashGetInfo(FlashInfo *fi);
+int FlashErase(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr);
+
+int FlashWrite(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr);
+
+int FlashRead(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount,
+				u8 *WriteBfrPtr, u8 *ReadBfrPtr);
 u32 GetRealAddr(XQspiPsu *QspiPsuPtr, u32 Address);
 int BulkErase(XQspiPsu *QspiPsuPtr, u8 *WriteBfrPtr);
 int DieErase(XQspiPsu *QspiPsuPtr, u8 *WriteBfrPtr);
@@ -44,6 +49,4 @@ int FlashRegisterRead(XQspiPsu *QspiPsuPtr, u32 ByteCount, u8 Command, u8 *ReadB
 int FlashRegisterWrite(XQspiPsu *QspiPsuPtr, u32 ByteCount, u8 Command,
 					u8 *WriteBfrPtr, u8 WrEn);
 int FlashEnterExit4BAddMode(XQspiPsu *QspiPsuPtr,unsigned int Enable);
-
-int FlashWrite(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr);
 #endif /* SRC_FLASH_OPER_H_ */

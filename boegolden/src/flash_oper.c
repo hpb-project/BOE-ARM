@@ -86,16 +86,12 @@
 ******************************************************************************/
 
 /***************************** Include Files *********************************/
-
 #include "xparameters.h"	/* SDK generated parameters */
 #include "xqspipsu.h"		/* QSPIPSU device driver */
 #include "xil_printf.h"
 #include "xil_cache.h"
 #include "flash_oper.h"
 
-#define DUMMY_FLASH 1
-
-#ifndef DUMMY_FLASH
 /************************** Constant Definitions *****************************/
 
 /*
@@ -279,27 +275,35 @@
  * change all the needed parameters in one place.
  */
 #define QSPIPSU_DEVICE_ID		XPAR_XQSPIPSU_0_DEVICE_ID
+
+/*
+ * Number of flash pages to be written.
+ */
+#define PAGE_COUNT		32
+
+/*
+ * Max page size to initialize write and read buffer
+ */
+#define MAX_PAGE_SIZE 1024
+
+/*
+ * Flash address to which data is to be written.
+ */
+#define TEST_ADDRESS		0x000000
+
+
+#define UNIQUE_VALUE		0x08
+
 #define ENTER_4B	1
 #define EXIT_4B		0
 
 
+/**************************** Type Definitions *******************************/
 
 
-static u8 ReadCmd;
-static u8 WriteCmd;
-static u8 StatusCmd;
-static u8 SectorEraseCmd;
-static u8 FSRFlag;
-
-/***************** Macros (Inline Functions) Definitions *********************/
-
-/************************** Function Prototypes ******************************/
 
 
-/************************** Variable Definitions *****************************/
-static u8 TxBfrPtr;
-static u8 ReadBfrPtr[3];
-static FlashInfo Flash_Config_Table[28] = {
+FlashInfo Flash_Config_Table[28] = {
 		/* Spansion */
 		{0x10000, 0x100, 256, 0x10000, 0x1000000,
 				SPANSION_ID_BYTE0, SPANSION_ID_BYTE2_128, 0xFFFF0000, 1},
@@ -364,8 +368,21 @@ static FlashInfo Flash_Config_Table[28] = {
 				ISSI_ID_BYTE0, ISSI_ID_BYTE2_256, 0xFFFF0000, 1}
 };
 
-static u32 FlashMake;
-static u32 FCTIndex;	/* Flash configuration table index */
+u8 ReadCmd;
+u8 WriteCmd;
+u8 StatusCmd;
+u8 SectorEraseCmd;
+u8 FSRFlag;
+
+/************************** Function Prototypes ******************************/
+
+/************************** Variable Definitions *****************************/
+u8 TxBfrPtr;
+u8 ReadBfrPtr[3];
+
+
+u32 FlashMake;
+u32 FCTIndex;	/* Flash configuration table index */
 
 
 /*
@@ -374,29 +391,14 @@ static u32 FCTIndex;	/* Flash configuration table index */
  * but should at least be static so they are zeroed.
  */
 
+
 static XQspiPsu_Msg FlashMsg[5];
-u8 CmdBfr[8];
-static int WriteToPage(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr);
-/*****************************************************************************/
-/**
-*
-* The purpose of this function is to illustrate how to use the XQspiPsu
-* device driver in single, parallel and stacked modes using
-* flash devices greater than or equal to 128Mb.
-* This function reads data in DMA mode.
-*
-* @param	None.
-*
-* @return	XST_SUCCESS if successful, else XST_FAILURE.
-*
-* @note		None.
-*
-*****************************************************************************/
+#ifndef DUMMY_FLASH
 int FlashInit(XQspiPsu *QspiPsuInstancePtr)
 {
 	int Status;
-	u16 QspiPsuDeviceId = QSPIPSU_DEVICE_ID;
 	XQspiPsu_Config *QspiPsuConfig;
+	u16 QspiPsuDeviceId = 0;
 
 	/*
 	 * Initialize the QSPIPSU driver so that it's ready to use
@@ -472,29 +474,14 @@ int FlashInit(XQspiPsu *QspiPsuInstancePtr)
 		}
 	}
 
+
 	return XST_SUCCESS;
 }
 
-int FlashRelease(XQspiPsu *QspiPsuPtr)
+int FlashGetInfo(FlashInfo *fi)
 {
-    int Status;
-	if(Flash_Config_Table[FCTIndex].FlashDeviceSize > SIXTEENMB) {
-		Status = FlashEnterExit4BAddMode(QspiPsuPtr,EXIT_4B);
-		if(Status != XST_SUCCESS) {
-			return XST_FAILURE;
-		}
-	}
-	return XST_SUCCESS;
-}
-
-int FlashGetInfo(XQspiPsu *QspiPsuPtr, FlashInfo *info)
-{
-	if (FCTIndex < sizeof(Flash_Config_Table)/sizeof(FlashInfo))
-	{
-		memcpy(info, &(Flash_Config_Table[FCTIndex]), sizeof(FlashInfo));
-		return XST_SUCCESS;
-	}
-	return XST_FAILURE;
+	memcpy(fi, &(Flash_Config_Table[FCTIndex]), sizeof(FlashInfo));
+	return 0;
 }
 
 /*****************************************************************************/
@@ -730,7 +717,6 @@ int FlashWriteInPage(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 Comman
 	 * If stacked assert the slave select based on address
 	 */
 	RealAddr = GetRealAddr(QspiPsuPtr, Address);
-	xil_printf("write to Address = 0x%x.\r\n", RealAddr);
 
 	/*
 	 * Send the write enable command to the Flash so that it can be
@@ -832,42 +818,26 @@ int FlashWriteInPage(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 Comman
 	return 0;
 }
 
-
+static u8 PageBuf[MAX_PAGE_SIZE];
 static int WriteToPage(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr)
 {
 	u32 pagesize = Flash_Config_Table[FCTIndex].PageSize;
-	u8 *pagebuf = (u8*)malloc(pagesize);
 	u32 pageAddr = Address & (~(pagesize-1));
 	u32 offset = Address - pageAddr;
 	u32 els = pagesize - offset;
 	u32 len = (els > ByteCount) ? ByteCount : els;
 
-	xil_printf("pageAddr = 0x%x, Address = 0x%x, offset = 0x%x.\r\n", pageAddr, Address, offset);
-	memset(pagebuf, 0xFF, pagesize);
-	memcpy(pagebuf+offset, WriteBfrPtr, len);
-	FlashWriteInPage(QspiPsuPtr, pageAddr, pagesize, WriteCmd, pagebuf);
-	for(int i = 0; i < pagesize; i++){
-		xil_printf("pagebuf[0x%02x] = 0x%02x\r\n", i, pagebuf[i]);
+	//xil_printf("pageAddr = 0x%x, Address = 0x%x, offset = 0x%x.\r\n", pageAddr, Address, offset);
+	memset(PageBuf, 0xFF, sizeof(PageBuf));
+	memcpy(&(PageBuf[offset]), WriteBfrPtr, len);
+	for(int i = 0; i < pagesize; i++)
+	{
+		//xil_printf("w[%d] = 0x%02x\r\n", i, WriteBfrPtr[i]);
 	}
-	free(pagebuf);
+	FlashWriteInPage(QspiPsuPtr, pageAddr, pagesize, WriteCmd, PageBuf);
+
 	return len;
 }
-/*****************************************************************************/
-/**
-*
-* This function writes to the  serial Flash connected to the QSPIPSU interface.
-* All the data put into the buffer not be limited in the same page of the device,
-*
-* @param	QspiPsuPtr is a pointer to the QSPIPSU driver component to use.
-* @param	Address contains the address to write data to in the Flash.
-* @param	ByteCount contains the number of bytes to write.
-* @param	Pointer to the write buffer (which is to be transmitted)
-*
-* @return	XST_SUCCESS if successful, else XST_FAILURE.
-*
-* @note		None.
-*
-******************************************************************************/
 int FlashWrite(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr)
 {
 	int wlen = 0;
@@ -882,7 +852,6 @@ int FlashWrite(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr
 
 	return 0;
 }
-
 
 /*****************************************************************************/
 /**
@@ -901,7 +870,8 @@ int FlashWrite(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr
 * @note		None.
 *
 ******************************************************************************/
-int FlashErase(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount)
+int FlashErase(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount,
+		u8 *WriteBfrPtr)
 {
 	u8 WriteEnableCmd;
 	u8 ReadStatusCmd;
@@ -910,7 +880,6 @@ int FlashErase(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount)
 	u32 RealAddr;
 	u32 NumSect;
 	int Status;
-	u8 WriteBfrPtr[8];
 
 	WriteEnableCmd = WRITE_ENABLE_CMD;
 	/*
@@ -1109,14 +1078,14 @@ int FlashErase(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount)
 * @note		None.
 *
 ******************************************************************************/
-int FlashRead(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount,  u8 *ReadBfrPtr)
+int FlashRead(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount,
+				u8 *WriteBfrPtr, u8 *ReadBfrPtr)
 {
 	u32 RealAddr;
 	u32 DiscardByteCnt;
 	u32 FlashMsgCnt;
 	int Status;
 	u8 Command = ReadCmd;
-	u8 WriteBfrPtr[8];
 
 	/* Check die boundary conditions if required for any flash */
 
@@ -1707,6 +1676,8 @@ int FlashEnterExit4BAddMode(XQspiPsu *QspiPsuPtr,unsigned int Enable)
 			 */
 			break;
 	}
+
+	GetRealAddr(QspiPsuPtr,TEST_ADDRESS);
 
 	FlashMsg[0].TxBfrPtr = &Cmd;
 	FlashMsg[0].RxBfrPtr = NULL;

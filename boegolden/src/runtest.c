@@ -18,7 +18,7 @@
 #include "flash_oper.h"
 #include "flash_map.h"
 #include "env.h"
-
+static u8 CmdBfr[8];
 
 void test_flash(void)
 {
@@ -66,10 +66,10 @@ void test_flash(void)
 	}
 #endif
 #if 1 // block test.
-    u8 filldata = 0xea;
+    u8 filldata = 0xab;
 
-    u8 wbfr[2048] = {0};
-    u8 rbfr[2048] = {0};
+    u8 wbfr[2032] = {0};
+    u8 rbfr[2032] = {0};
     memset(wbfr, filldata, sizeof(wbfr));
     XQspiPsu *QspiPsuInstancePtr = &QspiPsuInstance;
     maxdata = sizeof(wbfr);
@@ -78,7 +78,7 @@ void test_flash(void)
 		xil_printf("Flash Init failed.\r\n");
         return ;
 	}
-	Status = FlashErase(&QspiPsuInstance, test_addr, 0x1000*4);
+	Status = FlashErase(&QspiPsuInstance, test_addr, 0x100000*4, CmdBfr);
 	if (Status != XST_SUCCESS) {
 		return ;
 	}
@@ -89,7 +89,7 @@ void test_flash(void)
 		printf("Flash write failed.\n");
 		return;
 	}
-	Status = FlashRead(QspiPsuInstancePtr, test_addr, maxdata, rbfr);
+	Status = FlashRead(QspiPsuInstancePtr, test_addr, maxdata, CmdBfr, rbfr);
 	if(Status != XST_SUCCESS)
 	{
 		printf("Flash read failed.\n");
@@ -102,7 +102,7 @@ void test_flash(void)
 
 	}
 	for(int i = 0; i < sizeof(rbfr); i++) {
-		//printf("read[%d]=0x%02x, write[%d]=0x%02x.\n", i, rbfr[i], i, wbfr[i]);
+		printf("read[%d]=0x%02x, write[%d]=0x%02x.\n", i, rbfr[i], i, wbfr[i]);
 	}
 #endif
 #if 0 // test bytes.
