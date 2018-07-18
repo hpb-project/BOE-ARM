@@ -368,21 +368,21 @@ FlashInfo Flash_Config_Table[28] = {
 				ISSI_ID_BYTE0, ISSI_ID_BYTE2_256, 0xFFFF0000, 1}
 };
 
-u8 ReadCmd;
-u8 WriteCmd;
-u8 StatusCmd;
-u8 SectorEraseCmd;
-u8 FSRFlag;
+static u8 ReadCmd;
+static u8 WriteCmd;
+static u8 StatusCmd;
+static u8 SectorEraseCmd;
+static u8 FSRFlag;
 
 /************************** Function Prototypes ******************************/
 
 /************************** Variable Definitions *****************************/
-u8 TxBfrPtr;
-u8 ReadBfrPtr[3];
+static u8 TxBfrPtr;
+static u8 ReadBfrPtr[3];
 
 
-u32 FlashMake;
-u32 FCTIndex;	/* Flash configuration table index */
+static u32 FlashMake;
+static u32 FCTIndex;	/* Flash configuration table index */
 
 
 /*
@@ -475,6 +475,18 @@ int FlashInit(XQspiPsu *QspiPsuInstancePtr)
 	}
 
 
+	return XST_SUCCESS;
+}
+
+int FlashRelease(XQspiPsu *QspiPsuPtr)
+{
+    int Status;
+	if(Flash_Config_Table[FCTIndex].FlashDeviceSize > SIXTEENMB) {
+		Status = FlashEnterExit4BAddMode(QspiPsuPtr,EXIT_4B);
+		if(Status != XST_SUCCESS) {
+			return XST_FAILURE;
+		}
+	}
 	return XST_SUCCESS;
 }
 
@@ -1677,8 +1689,6 @@ int FlashEnterExit4BAddMode(XQspiPsu *QspiPsuPtr,unsigned int Enable)
 			break;
 	}
 
-	GetRealAddr(QspiPsuPtr,TEST_ADDRESS);
-
 	FlashMsg[0].TxBfrPtr = &Cmd;
 	FlashMsg[0].RxBfrPtr = NULL;
 	FlashMsg[0].ByteCount = 1;
@@ -1790,6 +1800,15 @@ int FlashErase(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount)
 }
 int FlashGetInfo(XQspiPsu *QspiPsuPtr, FlashInfo *info)
 {
+	info->SectSize = 0x20000;
+	info->NumSect  = 0x400;
+	info->PageSize = 512;
+	info->NumPage  = 0x40000;
+	info->FlashDeviceSize = 0x4000000;
+	info->ManufacturerID = MICRON_ID_BYTE0;
+	info->DeviceIDMemSize = MICRON_ID_BYTE2_512;
+	info->SectMask = 0xFFFE0000;
+	info->NumDie = 2;
 	return XST_SUCCESS;
 }
 int FlashWriteInPage(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 Command,

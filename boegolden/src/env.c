@@ -81,7 +81,7 @@ static int findValidEnv(EnvHandle *handle, u32 sAddress, EnvContent *genv)
     }while(sAddress < handle->end_addr);
 
     if (lastAddr != 0) {
-        printf("find valid env find, at 0x%x, env.boeid = %d.\n", lastAddr, lastEnv.boeid);
+        printf("find valid env, at 0x%x, env.boeid = %d.\n", lastAddr, lastEnv.boeid);
         handle->current_addr = lastAddr;
         memcpy(genv, &lastEnv, sizeof(EnvContent));
         return XST_SUCCESS;
@@ -122,7 +122,7 @@ static int writeEnv(EnvHandle *handle, EnvContent *env)
             nextSector = (Address + handle->flash_sector_size) & handle->flash_sector_mask;
         }
         Status = FlashErase(&handle->flashInstance, nextSector, handle->flash_sector_size, CmdBfr);
-        printf("Flash Erase 0x%x.\n", nextSector);
+        printf("Env erase next sector 0x%x.\n", nextSector);
         if(Status != XST_SUCCESS){
             xil_printf("Flash erase failed.\n");
             env->seq_id--;
@@ -184,18 +184,18 @@ int env_init(void)
 
         if (findValidEnv(&gHandle, gHandle.start_addr, &gHandle.genv) != XST_SUCCESS)
         {
-            // 1. erase all env partation
+            // 1. erase a sector env partation
             Status = FlashErase(&(gHandle.flashInstance), gHandle.start_addr, gHandle.flash_sector_size, CmdBfr);
-            printf("flash erase 0x%x, len = %d.\n", gHandle.start_addr, gHandle.flash_sector_size);
+            printf("flash erase 0x%x, len = %d.\r\n", gHandle.start_addr, gHandle.flash_sector_size);
             if(Status != XST_SUCCESS){
-                xil_printf("Flash erase failed.\n");
+                xil_printf("Flash erase failed.\r\n");
                 return XST_FAILURE;
             }
             // 2. write default env.
             initDefEnv(&gHandle, &gHandle.genv);
             Status = writeEnv(&gHandle, &gHandle.genv);
             if(Status != XST_SUCCESS){
-                xil_printf("write default env failed.\n");
+                xil_printf("write default env failed.\r\n");
                 return XST_FAILURE;
             }
         }

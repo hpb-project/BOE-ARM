@@ -57,7 +57,7 @@ int main()
 
     init_platform();
     //doMultiBoot();
-    xil_printf("hello world.\r\n");
+    xil_printf("This is Golden.\r\n");
 
     extern void runtest();
     runtest();

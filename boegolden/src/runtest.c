@@ -82,7 +82,7 @@ void test_flash(void)
 	if (Status != XST_SUCCESS) {
 		return ;
 	}
-	sleep(1);
+	//sleep(1);
 	Status = FlashWrite(&QspiPsuInstance, test_addr, maxdata, wbfr);
 	if(Status != XST_SUCCESS)
 	{
@@ -102,7 +102,7 @@ void test_flash(void)
 
 	}
 	for(int i = 0; i < sizeof(rbfr); i++) {
-		printf("read[%d]=0x%02x, write[%d]=0x%02x.\n", i, rbfr[i], i, wbfr[i]);
+		//printf("read[%d]=0x%02x, write[%d]=0x%02x.\n", i, rbfr[i], i, wbfr[i]);
 	}
 #endif
 #if 0 // test bytes.

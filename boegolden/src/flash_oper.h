@@ -8,7 +8,6 @@
 #ifndef SRC_FLASH_OPER_H_
 #define SRC_FLASH_OPER_H_
 
-#include "xqspipsu.h"
 
 /**************************** Type Definitions *******************************/
 #include "xparameters.h"	/* SDK generated parameters */
@@ -34,6 +33,7 @@ typedef struct{
 
 
 int FlashInit(XQspiPsu *QspiPsuInstancePtr);
+int FlashRelease(XQspiPsu *QspiPsuInstancePtr);
 int FlashReadID(XQspiPsu *QspiPsuPtr);
 int FlashGetInfo(FlashInfo *fi);
 int FlashErase(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr);
