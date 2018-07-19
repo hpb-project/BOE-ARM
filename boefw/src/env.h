@@ -33,10 +33,26 @@ typedef struct EnvContent {
 
     u32 envChecksum;  	// checksum above data.
 }EnvContent;
+
+
+typedef struct EnvHandle {
+    u32 start_addr;
+    u32 partation_size;
+    u32 end_addr;
+    u32 current_addr;
+    u32 flash_sector_size;	// erase unit.
+    u32 flash_sector_mask;
+    u32 bInit;
+    XQspiPsu flashInstance;
+    FPartation fp;
+    EnvContent genv;
+}EnvHandle;
+
 #pragma pack(pop)
 
 int env_init(void);
 int env_get(EnvContent *env);
 int env_update(EnvContent *env);
+EnvHandle* env_get_handle();
 
 #endif /* SRC_ENV_H_ */

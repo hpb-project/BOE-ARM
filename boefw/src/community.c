@@ -157,25 +157,24 @@ int FifoReceive (XLlFifo *InstancePtr, MsgPool *mp)
         {
             wlen = wlen/WORD_SIZE + 1;
         }
+#if 0
         if((wlen*WORD_SIZE) > sizeof(F_Package))
         {
             xil_printf("package size(%d) > F_Package size(%d).\r\n", wlen*WORD_SIZE, sizeof(F_Package));
             while(1);
         }
-
+#endif
 		/* Start Receiving */
 		for ( i=0; i < wlen; i++){
 			RxWord = XLlFifo_RxGetWord(InstancePtr);
 			*(dest+i) = RxWord;
 		}
-		xil_printf("fifo get a package.\r\n");
+		//xil_printf("fifo get a package.\r\n");
 		// push into msg pool
 		if(wlen > 0){
 			status = msg_pool_push(mp, &fp);
 			if(status != 0)
 				xil_printf("push failed.\r\n");
-			else
-				xil_printf("push success.\r\n");
 		}
 	}
 
@@ -217,7 +216,7 @@ static int msg_pool_push(MsgPool *mp, F_Package *pack)
 	int idx;
 	if(!msg_pool_full(mp)){
 		idx = mp->w_pos;
-        xil_printf("push package to idx = %d.\r\n", idx);
+        //xil_printf("push package to idx = %d.\r\n", idx);
 		memset(&(mp->pool[idx]), 0x0, sizeof(F_Package));
         //if(mp->w_pos == 999 || mp->w_pos == 0)
         //{
@@ -284,19 +283,23 @@ int msg_pool_fetch(MsgPoolHandle handle, A_Package **pack, u32 timeout_ms)
 {
 	MsgPool *mp = (MsgPool*)handle;
 	if(mp->magic != HANDLE_MAGIC)
+	{
+		xil_printf("mp-> maigc != HANDLE_MAGIC.\r\n");
 		return -1;
+	}
 	int pack_len = 0, bWait = 1, bGetMsg = 0;
 	u32 waitus = 0, timeout_us = timeout_ms *1000;
 	do{
 		FifoReceive(&mp->fifoIns, mp);
 		if(!msg_pool_empty(mp)){
 			F_Package *fp = &(mp->pool[mp->r_pos]);
-            xil_printf("r_pos = %d, w_pos = %d.\r\n", mp->r_pos, mp->w_pos);
+            //xil_printf("r_pos = %d, w_pos = %d.\r\n", mp->r_pos, mp->w_pos);
 			*pack = (A_Package*)fp;
 			mp->r_pos = (mp->r_pos+1)%MSG_POOL_SPACE;
 			bGetMsg = 1;
 			break;
 		}else{
+			xil_printf("msg_pool is empty.\r\n");
 			if(waitus >= timeout_us)
 				break;
 			usleep(1000);

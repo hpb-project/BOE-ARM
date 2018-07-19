@@ -59,7 +59,8 @@ typedef struct BlockDataInfo{
 }BlockDataInfo;
 
 typedef struct GlobalHandle {
-    XQspiPsu 	gFlashInstance;
+	EnvHandle  *gEnvHandle;
+    XQspiPsu 	*gFlashInstancePtr;
     EnvContent 	gEnv;
     BlockDataInfo gBlockDataList;
     MsgPoolHandle gMsgPoolIns;

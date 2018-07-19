@@ -55,6 +55,7 @@
 #include "doCommand.h"
 #include "common.h"
 #include "flash_oper.h"
+#include "version.h"
 
 /*
  * Firmware main work
@@ -85,21 +86,19 @@ static int package_check(A_Package *pack)
 {
     static u64 err_num;
     int ret = 0;
-    xil_printf("header.magic_aacc = 0x%x, header.magic_ccaa = 0x%x.\r\n", pack->header.magic_aacc, pack->header.magic_ccaa);
+
     if(pack->header.magic_aacc == 0xaacc && pack->header.magic_ccaa == 0xccaa){
         // compare checksum.
         u32 cks = checksum(pack->data, pack->header.body_length);
         if(cks != pack->checksum){
             ret = 2;
             err_num++;
-            //for(int j = 0; j < pack->header.body_length; j++)
-            //{
-            //    xil_printf("r[%d]=0x%02x\r\n", j, pack->data[j]);
-            //}
+
         }
     }else {
         ret = 1;
         err_num++;
+        xil_printf("header.magic_aacc = 0x%x, header.magic_ccaa = 0x%x.\r\n", pack->header.magic_aacc, pack->header.magic_ccaa);
     }
 
     return ret;
@@ -111,19 +110,26 @@ int mainloop(void)
     char *errmsg = NULL;
     char *msgbuf = (char*)malloc(PACKAGE_MIN_SIZE);
     int ret = 0;
+    xil_printf("Enter loop \r\n");
+    static u64 loop_times = 0;
     while(gHandle.bRun){
         A_Package *rcv = NULL;
         u32 timeout_ms = 0;
         memset(msgbuf, 0, PACKAGE_MIN_SIZE);
+        loop_times++;
+        if(loop_times % 1000)
+        {
+        	xil_printf("In main loop....\r\n");
+        }
         if(0 != msg_pool_fetch(gHandle.gMsgPoolIns, &rcv, timeout_ms)) {
             // have no msg.
-        	usleep(1000);
+        	usleep(1000000);
         }else {
             ret = package_check(rcv);
             if(0 == ret)
             {
                 ACmd cmd = rcv->header.acmd;
-                xil_printf("main: get cmd = %d.\r\n", cmd);
+                //xil_printf("main: get cmd = %d.\r\n", cmd);
                 Processor *pcs = processor_get(cmd);
                 if(pcs == NULL){
                 	errmsg = axu_get_error_msg(A_UNKNOWN_CMD);
@@ -162,6 +168,7 @@ int mainloop(void)
             msg_pool_txsend(gHandle.gMsgPoolIns, send, PACKAGE_MIN_SIZE);
         }
     }
+    xil_printf("Exit loop \r\n");
     free(msgbuf);
     return 0;
 }
@@ -170,14 +177,21 @@ int main()
 {
     int status = 0;
     init_platform();
+#if 0 // test flash
+    extern void runtest(void);
+    runtest();
+    return 0;
+#endif
 
-#if 1
     // 1. some init.
     status = env_init();
     if(status != XST_SUCCESS){
         xil_printf("Env init failed.\n\r");
         return -1;
     }
+    gHandle.gEnvHandle = env_get_handle();
+    gHandle.gFlashInstancePtr = &gHandle.gEnvHandle->flashInstance;
+
     status = env_get(&gHandle.gEnv);
     if(status != XST_SUCCESS){
         xil_printf("env get failed.\n\r");
@@ -198,13 +212,10 @@ int main()
         send_upgrade_progress(100, "reboot success.");
     }
 
-    xil_printf("Welcome to HPB.\r\n");
+    xil_printf("Welcome to HPB, SWVer = 0x%02x.\r\n", gAXUVersion);
 
     // 3. enter mainloop.
     mainloop();
-#endif
-
-
 
 
     cleanup_platform();

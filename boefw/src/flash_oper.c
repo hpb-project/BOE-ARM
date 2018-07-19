@@ -474,18 +474,7 @@ int FlashInit(XQspiPsu *QspiPsuInstancePtr)
 		}
 	}
 
-	return XST_SUCCESS;
-}
 
-int FlashRelease(XQspiPsu *QspiPsuPtr)
-{
-    int Status;
-	if(Flash_Config_Table[FCTIndex].FlashDeviceSize > SIXTEENMB) {
-		Status = FlashEnterExit4BAddMode(QspiPsuPtr,EXIT_4B);
-		if(Status != XST_SUCCESS) {
-			return XST_FAILURE;
-		}
-	}
 	return XST_SUCCESS;
 }
 
@@ -728,7 +717,6 @@ int FlashWriteInPage(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 Comman
 	 * If stacked assert the slave select based on address
 	 */
 	RealAddr = GetRealAddr(QspiPsuPtr, Address);
-	xil_printf("write to Address = 0x%x.\r\n", RealAddr);
 
 	/*
 	 * Send the write enable command to the Flash so that it can be
@@ -1688,6 +1676,8 @@ int FlashEnterExit4BAddMode(XQspiPsu *QspiPsuPtr,unsigned int Enable)
 			 */
 			break;
 	}
+
+	GetRealAddr(QspiPsuPtr,TEST_ADDRESS);
 
 	FlashMsg[0].TxBfrPtr = &Cmd;
 	FlashMsg[0].RxBfrPtr = NULL;

@@ -19,18 +19,6 @@
 
 #define ENV_DATA_SIZE (2048)
 
-typedef struct EnvHandle {
-    u32 start_addr;
-    u32 partation_size;
-    u32 end_addr;
-    u32 current_addr;
-    u32 flash_sector_size;	// erase unit.
-    u32 flash_sector_mask;
-    u32 bInit;
-    XQspiPsu flashInstance;
-    FPartation fp;
-    EnvContent genv;
-}EnvHandle;
 
 
 static u8 CmdBfr[8];
@@ -81,12 +69,12 @@ static int findValidEnv(EnvHandle *handle, u32 sAddress, EnvContent *genv)
     }while(sAddress < handle->end_addr);
 
     if (lastAddr != 0) {
-        printf("find valid env, at 0x%x, env.boeid = %d.\n", lastAddr, lastEnv.boeid);
+        printf("find valid env find, at 0x%x, env.boeid = %d.\r\n", lastAddr, lastEnv.boeid);
         handle->current_addr = lastAddr;
         memcpy(genv, &lastEnv, sizeof(EnvContent));
         return XST_SUCCESS;
     }
-    printf("not find valid env.\n");
+    printf("not find valid env.\r\n");
     return XST_FAILURE;
 }
 
@@ -122,18 +110,18 @@ static int writeEnv(EnvHandle *handle, EnvContent *env)
             nextSector = (Address + handle->flash_sector_size) & handle->flash_sector_mask;
         }
         Status = FlashErase(&handle->flashInstance, nextSector, handle->flash_sector_size, CmdBfr);
-        printf("Env erase next sector 0x%x.\n", nextSector);
+        printf("Flash Erase 0x%x.\r\n", nextSector);
         if(Status != XST_SUCCESS){
-            xil_printf("Flash erase failed.\n");
+            xil_printf("Flash erase failed.\r\n");
             env->seq_id--;
             return XST_FAILURE;
         }
         writeAddress = nextSector;
     }
     Status = FlashWrite(&handle->flashInstance, writeAddress, sizeof(EnvContent), (u8*)env);
-    printf("flash write env to 0x%x.\n", writeAddress);
+    printf("flash write env to 0x%x.\r\n", writeAddress);
     if(Status != XST_SUCCESS){
-        xil_printf("Flash write failed.\n");
+        xil_printf("Flash write failed.\r\n");
         env->seq_id--;
         return XST_FAILURE;
     }
@@ -184,7 +172,7 @@ int env_init(void)
 
         if (findValidEnv(&gHandle, gHandle.start_addr, &gHandle.genv) != XST_SUCCESS)
         {
-            // 1. erase a sector env partation
+            // 1. erase all env partation
             Status = FlashErase(&(gHandle.flashInstance), gHandle.start_addr, gHandle.flash_sector_size, CmdBfr);
             printf("flash erase 0x%x, len = %d.\r\n", gHandle.start_addr, gHandle.flash_sector_size);
             if(Status != XST_SUCCESS){
@@ -225,6 +213,11 @@ int env_update(EnvContent *env)
         }
     }
     return XST_FAILURE;
+}
+
+EnvHandle* env_get_handle()
+{
+	return &gHandle;
 }
 
 static void buildCheck()

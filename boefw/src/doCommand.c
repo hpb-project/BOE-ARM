@@ -12,6 +12,13 @@
 #include "version.h"
 #include "doCommand.h"
 static u8 gEmpty256[32] = {0};
+static u8 CmdBfr[8];
+
+
+static void doMultiBoot(u32 Addr)
+{
+    GoMultiBoot(Addr/0x8000);
+}
 
 static int make_response_version(A_Package *req, ACmd cmd, u8 version, A_Package *p)
 {
@@ -205,7 +212,7 @@ static PRET doTransportMid(A_Package *p, A_Package *res)
     xil_printf("do %s, fileid = 0x%x, offset = %d.\r\n", __FUNCTION__, fileid, offset);
     // find info.
     BlockDataInfo *info = findInfo(&(gHandle.gBlockDataList), fileid);
-    xil_printf("info = 0x%p\r\n", info);
+    //xil_printf("info = 0x%p\r\n", info);
     if(info == NULL){
     	xil_printf("do %s, not find fileid 0x%x.\r\n", __FUNCTION__, fileid);
         errmsg = axu_get_error_msg(A_MID_UID_NOT_FOUND);
@@ -232,7 +239,7 @@ static PRET doTransportMid(A_Package *p, A_Package *res)
         return PRET_ERROR;
     }
     // restructure data.
-    xil_printf("offset = %d, len = %d.\r\n", offset, datalen);
+    //xil_printf("offset = %d, len = %d.\r\n", offset, datalen);
     memcpy(&(info->data[offset]), &(p->data[TRANSPORT_MID_DATA_OFFSET]), datalen);
     info->recLen += datalen;
     make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
@@ -243,14 +250,14 @@ static PRET doTransportMid(A_Package *p, A_Package *res)
 #define TRANSPORT_FIN_ID_SIZE (4)
 #define TRANSPORT_FIN_OFFSET_SIZE (4)
 #define TRANSPORT_FIN_LEN_SIZE (4)
-#define TRANSPORT_FIN_DATA_OFFSET (TRANSPORT_FIN_ID_SIZE+TRANSPORT_FIN_OFFSET_SIZE + TRANSPORT_FIN_LEN_SIZE)
+#define TRANSPORT_FIN_DATA_OFFSET (TRANSPORT_FIN_ID_SIZE+TRANSPORT_FIN_OFFSET_SIZE+TRANSPORT_FIN_LEN_SIZE)
 #define GetFinID(pack)        (*((u32*)(&pack->data[0])))
 #define GetFinOffset(pack)    (*((u32*)(&pack->data[0+4])))
 #define GetFinDatalen(pack)   (*((u32*)(&pack->data[0+4+4])))
 static PRET doTransportFin(A_Package *p, A_Package *res)
 {
     u32 fileid = 0, datalen = 0;
-    u16 offset = 0;
+    u32 offset = 0;
 
     char *errmsg = NULL;
     char msgbuf[PACKAGE_MIN_SIZE] = {0};
@@ -376,9 +383,9 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
             writeLen = fp_img1.pSize;
         }
     }
-    FM_Print(&fp_golden);
-    FM_Print(&fp_img1);
-    FM_Print(&fp_img2);
+    //FM_Print(&fp_golden);
+    //FM_Print(&fp_img1);
+    //FM_Print(&fp_img2);
 
     if(info->flag == UPGRADE_ABORT){
 		errmsg = axu_get_error_msg(A_UPGRADE_STATE_ERROR);
@@ -392,7 +399,7 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
 
     xil_printf("do %s, start erase flash 0x%x, len = 0x%x.\r\n", __FUNCTION__, upgradeAddr, writeLen);
     // flash erase.
-    if(0 != FlashErase(&(gHandle.gFlashInstance), upgradeAddr, writeLen)){
+    if(0 != FlashErase(gHandle.gFlashInstancePtr, upgradeAddr, writeLen, CmdBfr)){
         xil_printf("Upgrade: flash erase error, addr:0x%x, size:0x%x.\r\n", upgradeAddr, writeLen);
         errmsg = axu_get_error_msg(A_UPGRADE_FLASH_ERASE_ERROR);
         make_response_error(p, ACMD_BP_RES_ERR, A_UPGRADE_FLASH_ERASE_ERROR, errmsg, strlen(errmsg), res);
@@ -412,7 +419,7 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
 	info->flag = UPGRADE_WRITEING_FLASH;
 	xil_printf("do %s, start write flash 0x%x, len = 0x%x.\r\n", __FUNCTION__, upgradeAddr, info->dataLen);
     // write to flash
-    if(0 != FlashWrite(&(gHandle.gFlashInstance), upgradeAddr, info->dataLen, info->data)){
+    if(0 != FlashWrite(gHandle.gFlashInstancePtr, upgradeAddr, info->dataLen, info->data)){
         xil_printf("Upgrade: flash write error, addr:0x%x, size:0x%x.\r\n", upgradeAddr, info->dataLen);
         errmsg = axu_get_error_msg(A_UPGRADE_FLASH_WRITE_ERROR);
         make_response_error(p, ACMD_BP_RES_ERR, A_UPGRADE_FLASH_WRITE_ERROR, errmsg, strlen(errmsg), res);
@@ -433,8 +440,10 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
 		return PRET_ERROR;
     }
     xil_printf("do %s, upgrade come to reset.\r\n", __FUNCTION__);
+    sleep(1);
+    //u32 addr = GetRealAddr(gHandle.gFlashInstancePtr, upgradeAddr);
 
-    //GoReset();
+    GoReset();
     return PRET_OK;
 }
 

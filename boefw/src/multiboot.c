@@ -47,7 +47,7 @@ void GoReset(void)
 	dsb();
 	isb();
 	/* Soft reset the system */
-	printf("System Soft Reset\n\r");
+	printf("Multiboot Performing System Soft Reset\n\r");
 	RegValue = Xil_In32(CRL_APB_RESET_CTRL);
 	Xil_Out32(CRL_APB_RESET_CTRL,
 			RegValue|CRL_APB_RESET_CTRL_SOFT_RESET_MASK);

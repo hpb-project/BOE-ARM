@@ -25,9 +25,10 @@
 #include "multiboot.h"
 #include "sleep.h"
 #include "flash_map.h"
+#include "flash_oper.h"
 #include "env.h"
 
-static void doMultiBoot()
+static int doMultiBoot()
 {
     int status = 0;
     status = env_init();
@@ -44,24 +45,39 @@ static void doMultiBoot()
     FPartation fp1, fp2;
     FM_GetPartation(FM_IMAGE1_PNAME, &fp1);
     FM_GetPartation(FM_IMAGE2_PNAME, &fp2);
+
     if(env.bootaddr != fp1.pAddr && env.bootaddr != fp2.pAddr){
     	env.bootaddr = fp1.pAddr;
         env_update(&env);
-        GoMultiBoot(fp1.pAddr/0x8000);
     }
-    GoMultiBoot(env.bootaddr/0x8000);
+
+    EnvHandle *eHandle = env_get_handle();
+    xil_printf("GoBoot 0x%x\r\n", env.bootaddr);
+    sleep(1);
+
+    u32 RealAddr = GetRealAddr(&(eHandle->flashInstance), env.bootaddr);
+    GoMultiBoot(RealAddr/0x8000);
+
+    return 0;
 }
 
 int main()
 {
 
     init_platform();
-    //doMultiBoot();
-    xil_printf("hello world.\r\n");
-
+    xil_printf("This is golden image.\r\n");
+#if 0
+    while(1)
+    {
+    	sleep(1);
+    	xil_printf("mmmmeeeeeeeeeee\r\n");
+    }
     extern void runtest();
-    runtest();
+	runtest();
+#endif
 
+
+    doMultiBoot();
 
     cleanup_platform();
     return 0;

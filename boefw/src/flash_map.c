@@ -1,4 +1,4 @@
-// Last Update:2018-07-16 20:24:47
+// Last Update:2018-07-18 15:21:59
 /**
  * @file flash_map.c
  * @brief 
@@ -8,6 +8,7 @@
  */
 #include "flash_map.h"
 #include "xstatus.h"
+#include <string.h>
 #include "compiler.h"
 
 //#define TEST_HPB
@@ -27,16 +28,16 @@
 
 #else  // test boe
 #define FLASH_BASEADDR 	(0)
-#define FLASH_SIZE     	(0x8000000)    // 512Mb * 2 = 128MB
+#define FLASH_SIZE     	(0x4000000)    // 64MB
 #define FLASH_END 		(FLASH_BASEADDR + FLASH_SIZE)
 #define GOLDEN_OFFSET 	(FLASH_BASEADDR)
 #define GOLDEN_SIZE   	(0x400000)		// 4MB
 #define ENV_OFFSET		(GOLDEN_OFFSET + GOLDEN_SIZE)
 #define ENV_SIZE		(0x200000)		// 2MB
 #define IMAGE_1_OFFSET  (ENV_OFFSET + ENV_SIZE)
-#define IMAGE_1_SIZE    (0x3C00000)		// 60MB
+#define IMAGE_1_SIZE    (0x1800000)		// 24MB
 #define IMAGE_2_OFFSET  (IMAGE_1_OFFSET + IMAGE_1_SIZE)
-#define IMAGE_2_SIZE    (0x3C00000)		// 60MB
+#define IMAGE_2_SIZE    (0x1800000)		// 24MB
 #define FLASH_USE_END   (IMAGE_2_OFFSET+IMAGE_2_SIZE)
 #endif
 
@@ -63,8 +64,8 @@ int FM_GetPartation(char *pName, FPartation *partation)
     {
         FPartation *fp = &(gDefPartationList[i]);
         if(strcmp(fp->pName, pName) == 0){
-            xil_printf("copy fpinfo %s.\r\n", fp->pName);
-            FM_Print(fp);
+            //xil_printf("copy fpinfo %s.\r\n", fp->pName);
+            //FM_Print(fp);
             memcpy(partation, fp, sizeof(FPartation));
             return XST_SUCCESS;
         }

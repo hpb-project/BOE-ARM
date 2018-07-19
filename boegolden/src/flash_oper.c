@@ -1790,6 +1790,15 @@ int FlashErase(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount)
 }
 int FlashGetInfo(XQspiPsu *QspiPsuPtr, FlashInfo *info)
 {
+	info->SectSize = 0x20000;
+	info->NumSect  = 0x400;
+	info->PageSize = 512;
+	info->NumPage  = 0x40000;
+	info->FlashDeviceSize = 0x4000000;
+	info->ManufacturerID = MICRON_ID_BYTE0;
+	info->DeviceIDMemSize = MICRON_ID_BYTE2_512;
+	info->SectMask = 0xFFFE0000;
+	info->NumDie = 2;
 	return XST_SUCCESS;
 }
 int FlashWriteInPage(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 Command,

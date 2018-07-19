@@ -79,7 +79,7 @@ extern "C" {
 #define DEBUG_GENERAL	      (0x00000002U)    /* general debug  messages */
 #define DEBUG_INFO	      (0x00000004U)    /* More debug information */
 #define DEBUG_DETAILED	      (0x00000008U)    /* More debug information */
-
+#define FSBL_DEBUG
 #if defined (FSBL_DEBUG_DETAILED)
 #define XFsblDbgCurrentTypes ((DEBUG_DETAILED) | (DEBUG_INFO) | \
          (DEBUG_GENERAL) | (DEBUG_PRINT_ALWAYS))
