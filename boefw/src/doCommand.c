@@ -443,7 +443,7 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
     sleep(1);
     //u32 addr = GetRealAddr(gHandle.gFlashInstancePtr, upgradeAddr);
 
-    GoReset();
+    doMultiBoot(0);
     return PRET_OK;
 }
 

@@ -299,7 +299,7 @@ int msg_pool_fetch(MsgPoolHandle handle, A_Package **pack, u32 timeout_ms)
 			bGetMsg = 1;
 			break;
 		}else{
-			xil_printf("msg_pool is empty.\r\n");
+			//xil_printf("msg_pool is empty.\r\n");
 			if(waitus >= timeout_us)
 				break;
 			usleep(1000);

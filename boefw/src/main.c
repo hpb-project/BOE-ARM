@@ -112,6 +112,7 @@ int mainloop(void)
     int ret = 0;
     xil_printf("Enter loop \r\n");
     static u64 loop_times = 0;
+
     while(gHandle.bRun){
         A_Package *rcv = NULL;
         u32 timeout_ms = 0;
@@ -119,11 +120,11 @@ int mainloop(void)
         loop_times++;
         if(loop_times % 1000)
         {
-        	xil_printf("In main loop....\r\n");
+        	//xil_printf("In main loop....\r\n");
         }
         if(0 != msg_pool_fetch(gHandle.gMsgPoolIns, &rcv, timeout_ms)) {
             // have no msg.
-        	usleep(1000000);
+        	usleep(1000);
         }else {
             ret = package_check(rcv);
             if(0 == ret)
