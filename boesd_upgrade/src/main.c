@@ -18,6 +18,15 @@
 #define IMAGE_BUF_SIZE (128*1024*1024) // 128MB
 #define ENV_BUF_SIZE   (20*1024*1024) // 20MB
 
+typedef struct ImageHeader{
+    uint8_t usage;
+    uint8_t vendor[3];
+    uint32_t chk;
+    uint32_t len;
+    uint8_t hw;
+    uint8_t fw;
+    uint8_t axu;
+ }ImageHeader;
 
 typedef struct UpgradeImgInfo{
 	char imageName[100];
@@ -42,7 +51,7 @@ typedef struct Handle{
 
 static Handle gHandle;
 
-static char *DefaultImageName = "upgrade.img";
+static char *DefaultImageName = "upgrade.bin";
 static char *DefaultEnvName   = "env.txt";
 
 static u8 *gImgBuf = NULL;
@@ -104,11 +113,11 @@ static int parseJson(char *envBuf, u64 bufLen, UpgradeInfo *info)
 	{
 		JSON *jversion = JSON_GetObjectItem(root,"version");
 		if((jversion != NULL) && (jversion->type == JSON_String)){
-			if(strcmp(jversion->string, dCurrentVersion) != 0){
+			if(strcmp(jversion->valuestring, dCurrentVersion) != 0){
 				xil_printf("env version not match, parse failed.\r\n");
 				return XST_FAILURE;
 			}
-			strcpy(info->version, jversion->string);
+			strcpy(info->version, jversion->valuestring);
 
 			JSON *upgradelist = JSON_GetObjectItem(root, "upgradelist");
 			if((upgradelist != NULL) && (upgradelist->type == JSON_Array)){
@@ -121,20 +130,20 @@ static int parseJson(char *envBuf, u64 bufLen, UpgradeInfo *info)
 						// parse upgrade img info.
 						JSON *iname = JSON_GetObjectItem(uitem,"imageName");
 						if((iname != NULL) && (iname->type == JSON_String)){
-							strncpy(fi.imageName, iname->string, sizeof(fi.imageName));
+							strncpy(fi.imageName, iname->valuestring, sizeof(fi.imageName));
 						}else{
 							continue;
 						}
 
 						JSON *partationOffset = JSON_GetObjectItem(uitem,"partationOffset");
 						if(partationOffset != NULL && partationOffset->type == JSON_String){
-							fi.pAddr = htoi(partationOffset->string);
+							fi.pAddr = htoi(partationOffset->valuestring);
 						}else{
 							continue;
 						}
 						JSON *partationLen = JSON_GetObjectItem(uitem,"partationLen");
 						if(partationLen != NULL && partationLen->type == JSON_String){
-							fi.pLen = htoi(partationLen->string);
+							fi.pLen = htoi(partationLen->valuestring);
 						}else{
 							continue;
 						}
@@ -156,6 +165,19 @@ static int parseJson(char *envBuf, u64 bufLen, UpgradeInfo *info)
 	}
 	return status;
 }
+uint32_t checksum(uint8_t *data, uint32_t len)
+{
+    uint32_t chk = 0;
+    if(data != NULL && len > 0)
+    {
+        for(uint32_t i = 0;i < len; i++)
+        {
+            chk += data[i];
+        }
+    }
+    return chk;
+}
+
 static u8 CmdBfr[8];
 static int upgradeBin(Handle *handle, UpgradeImgInfo *info)
 {
@@ -163,17 +185,41 @@ static int upgradeBin(Handle *handle, UpgradeImgInfo *info)
 	u32 pAddr = info->pAddr;
 	u32 pLen  = info->pLen;
 	int status = XST_SUCCESS;
+	ImageHeader *header = (ImageHeader*)info->imgBuf;
+	u8 *pdata = info->imgBuf + sizeof(ImageHeader);
+	u64 imglen = info->imgLen - sizeof(ImageHeader);
+	u32 chk = checksum(pdata, imglen);
+	if(chk != header->chk){
+		xil_printf("Image checksum not match.\r\n");
+		return XST_FAILURE;
+	}
+	u8 *buf = (u8*)malloc(imglen);
+	memset(buf, 0x0, imglen);
 
 	status = FlashErase(QspiPsuPtr, pAddr, pLen, CmdBfr);
 	if(status != XST_SUCCESS){
 		xil_printf("Flash erase 0x%x, len 0x%x failed.\r\n", pAddr, pLen);
 		return status;
 	}
-	status = FlashWrite(QspiPsuPtr, pAddr, info->imgLen, info->imgBuf);
+	status = FlashWrite(QspiPsuPtr, pAddr, imglen, pdata);
 	if(status != XST_SUCCESS){
-		xil_printf("Flash write 0x%x, len 0x%x failed.\r\n", pAddr, info->imgLen);
+		xil_printf("Flash write 0x%x, len 0x%x failed.\r\n", pAddr, imglen);
 		return status;
 	}
+	// recheck
+	status = FlashRead(QspiPsuPtr, pAddr, imglen, CmdBfr, buf);
+	if(status != XST_SUCCESS){
+		xil_printf("Flash read 0x%x, len 0x%x failed.\r\n", pAddr, imglen);
+		return status;
+	}
+	for(u32 i = 0; i < imglen; i++){
+		if(buf[i] != pdata[i]){
+			xil_printf("Flash write and read not match, failed.\r\n");
+			return XST_FAILURE;
+		}
+	}
+	free(buf);
+
 	return XST_SUCCESS;
 }
 
@@ -334,11 +380,13 @@ int main()
 #else
     if(XST_SUCCESS == init(&gHandle)){
     	if(XST_SUCCESS == doSDUpgrade(&gHandle)){
+    		xil_printf("sd upgrade success.\r\n");
     		led_upgrade_success();
     	}
     }
 
     // run to here is upgrade failed.
+    xil_printf("sd upgrade failed.\r\n");
     led_upgrade_failed();
 #endif
     cleanup_platform();

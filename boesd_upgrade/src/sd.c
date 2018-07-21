@@ -155,6 +155,7 @@ int sdRead(char *filename, u8 *buf, u64 *rlen)
 			return SD_FAILED; // read failed.
 		}
 		count += NumBytesRead;
+		buf += NumBytesRead;
 		if(NumBytesRead == bytes)
 		{
 			if((count + bytes) < bufsize)
