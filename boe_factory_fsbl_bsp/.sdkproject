@@ -1,0 +1,4 @@
+THIRPARTY=false
+HW_PROJECT_REFERENCE=boe_factory
+PROCESSOR=psu_cortexa53_0
+MSS_FILE=system.mss
