@@ -1,4 +1,4 @@
-// Last Update:2018-07-24 15:44:55
+// Last Update:2018-07-24 21:57:51
 /**
  * @file rstest.c
  * @brief 
@@ -16,6 +16,8 @@
 #define REQ_DRAM_TEST    (0x3)
 #define REQ_NET_TEST     (0x4)
 #define REQ_CONNECT      (0x5)
+#define REQ_RESULT       (0x6)
+#define REQ_FINISH       (0x7)
 
 
 #define RET_FAILED       (0x1)
@@ -33,7 +35,7 @@ typedef struct Package{
 
 static uint8_t tx[1024];
 static uint8_t rx[1024];
-
+static uint8_t result = 0;
 int make_package_sd_test(Package *p)
 {
     p->pid = get_pid();
@@ -71,6 +73,23 @@ int make_package_conn(Package *p)
     p->pid = get_pid();
     p->magic = MAGIC;
     p->cmd   = REQ_CONNECT;
+    return sizeof(Package);
+}
+
+int make_package_result(Package *p)
+{
+    p->pid = get_pid();
+    p->magic = MAGIC;
+    p->cmd   = REQ_RESULT;
+    p->data[0] = result;
+    return sizeof(Package) + 1;
+}
+
+int make_package_finish(Package *p)
+{
+    p->pid = get_pid();
+    p->magic = MAGIC;
+    p->cmd   = REQ_FINISH;
     return sizeof(Package);
 }
 typedef int (*MK_PKG)(Package*);
@@ -147,37 +166,47 @@ int main(int argc, char *argv[])
 
     RSContext rs;
     ret = RSCreate(ethname, type, &rs);
-
+    if(ret != 0)
+    {
+        printf("rscreate failed, please check ethname and use sudo.\r\n");
+        return -1;
+    }
 
     ret = _do(&rs, make_package_conn, 1);
     if(ret != 0)
     {
         printf("connect failed.\n");
-        return 1;
+        goto failed;
     }
 
     ret = _do(&rs, make_package_dramtest, 60);
     if(ret != 0)
     {
         printf("dramtest failed.\n");
-        return 1;
+        goto failed;
     }
 
     ret = _do(&rs, make_package_sd_test, 60);
     if(ret != 0)
     {
         printf("sdtest failed.\n");
-        return 1;
+        goto failed;
     }
 
     ret = _do(&rs, make_package_flash_test, 60);
     if(ret != 0)
     {
         printf("flashtest failed.\n");
-        return 1;
+        goto failed;
     }
+    goto success;
+
+failed:
+    result = 1;
+    _do(&rs, make_package_result, 1);
+success:
+    _do(&rs, make_package_finish, 1);
 
     RSRelease(&rs);
-
     return ret;
 }
