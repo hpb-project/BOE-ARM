@@ -26,6 +26,8 @@
 #include "xllfifo.h"
 #include "xstatus.h"
 #include "community.h"
+#include <sleep.h>
+#include <stdlib.h>
 
 #define FIFO_DEV_ID	   	XPAR_AXI_FIFO_0_DEVICE_ID
 #define WORD_SIZE 		4
@@ -50,7 +52,6 @@ typedef struct MsgPool{
 static int msg_pool_full(MsgPool *mp);
 static int msg_pool_empty(MsgPool *mp);
 static int msg_pool_push(MsgPool *mp, F_Package *pack);
-static A_Package* msg_new(int len);
 
 
 int FifoInit(XLlFifo *InstancePtr, u16 DeviceId)
@@ -92,7 +93,7 @@ int FifoInit(XLlFifo *InstancePtr, u16 DeviceId)
 int FifoSend(XLlFifo *InstancePtr, u8  *SourceAddr, int sendlen)
 {
 	int i;
-	u32 *wBuf;
+	u32 wBuf[512];
 	u32 wlen;
 	int timeout = 2000000; // 2sec
 	if(sendlen%WORD_SIZE == 0){
@@ -100,8 +101,7 @@ int FifoSend(XLlFifo *InstancePtr, u8  *SourceAddr, int sendlen)
 	}else{
 		wlen = sendlen/WORD_SIZE + 1;
 	}
-	wBuf = (u32*)malloc(WORD_SIZE * wlen);
-	memset(wBuf, 0, WORD_SIZE * wlen);
+	memset(wBuf, 0, sizeof(wBuf));
 	memcpy((u8*)wBuf, SourceAddr, sendlen);
 
 	for(i=0 ; i < wlen ; i++){
@@ -111,15 +111,14 @@ int FifoSend(XLlFifo *InstancePtr, u8  *SourceAddr, int sendlen)
 				*(wBuf+i));
 		}
 	}
-	free(wBuf);
 
 	/* Start Transmission by writing transmission length into the TLR */
 	XLlFifo_iTxSetLen(InstancePtr, (wlen*WORD_SIZE));
 
 	/* Check for Transmission completion */
 	while( !(XLlFifo_IsTxDone(InstancePtr)) ){
-		usleep(1000);
-		timeout -= 1000;
+		usleep(100);
+		timeout -= 100;
 		if(timeout < 0)
 		{
 			return 1;
@@ -287,7 +286,7 @@ int msg_pool_fetch(MsgPoolHandle handle, A_Package **pack, u32 timeout_ms)
 		xil_printf("mp-> maigc != HANDLE_MAGIC.\r\n");
 		return -1;
 	}
-	int pack_len = 0, bWait = 1, bGetMsg = 0;
+	int bWait = 1, bGetMsg = 0;
 	u32 waitus = 0, timeout_us = timeout_ms *1000;
 	do{
 		FifoReceive(&mp->fifoIns, mp);
@@ -321,7 +320,6 @@ int msg_pool_txsend(MsgPoolHandle handle, A_Package *pack, int bytelen)
 	MsgPool *mp = (MsgPool*)handle;
 	if(mp->magic != HANDLE_MAGIC)
 		return -1;
-	u32 timeout_us = 20*1000; // 20ms
 	int status = FifoSend(&(mp->fifoIns), (u8*)pack, bytelen);
 	if(status != XST_SUCCESS){
 		return 1;

@@ -56,6 +56,8 @@
 #include "common.h"
 #include "flash_oper.h"
 #include "version.h"
+#include "atimer.h"
+#include <time.h>
 
 /*
  * Firmware main work
@@ -76,7 +78,15 @@
 
 extern GlobalHandle gHandle;
 
+static u64 pro_st, pro_so;
+#define PROFILE_START()\
+	pro_st = 0;\
+	atimer_reset();\
 
+
+#define PROFILE_STOP()\
+	pro_so = atimer_gettm();\
+	xil_printf("--PROFILE--time cost %dms.\r\n", pro_so - pro_st);
 /*
  * return value: 0: correct data.
  *               1: magic error.
@@ -93,7 +103,6 @@ static int package_check(A_Package *pack)
         if(cks != pack->checksum){
             ret = 2;
             err_num++;
-
         }
     }else {
         ret = 1;
@@ -111,17 +120,12 @@ int mainloop(void)
     char *msgbuf = (char*)malloc(PACKAGE_MIN_SIZE);
     int ret = 0;
     xil_printf("Enter loop \r\n");
-    static u64 loop_times = 0;
 
     while(gHandle.bRun){
         A_Package *rcv = NULL;
         u32 timeout_ms = 0;
         memset(msgbuf, 0, PACKAGE_MIN_SIZE);
-        loop_times++;
-        if(loop_times % 1000)
-        {
-        	//xil_printf("In main loop....\r\n");
-        }
+
         if(0 != msg_pool_fetch(gHandle.gMsgPoolIns, &rcv, timeout_ms)) {
             // have no msg.
         	usleep(1000);
@@ -190,6 +194,11 @@ int main()
         xil_printf("Env init failed.\n\r");
         return -1;
     }
+    status = atimer_init();
+    if(status != XST_SUCCESS){
+		xil_printf("timer init failed.\n\r");
+		return -1;
+	}
     gHandle.gEnvHandle = env_get_handle();
     gHandle.gFlashInstancePtr = &gHandle.gEnvHandle->flashInstance;
 

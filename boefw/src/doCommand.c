@@ -11,9 +11,20 @@
 #include "flash_map.h"
 #include "version.h"
 #include "doCommand.h"
+#include "atimer.h"
 static u8 gEmpty256[32] = {0};
 static u8 CmdBfr[8];
 
+
+static u64 pro_st, pro_so;
+#define PROFILE_START()\
+	pro_st = 0;\
+	atimer_reset();\
+
+
+#define PROFILE_STOP()\
+	pro_so = atimer_gettm();\
+	xil_printf("--PROFILE--time cost %dms.\r\n", pro_so - pro_st);
 
 static void doMultiBoot(u32 Addr)
 {
@@ -54,7 +65,7 @@ int make_response_ack(A_Package *req, ACmd cmd, u8 ack, A_Package *p)
 {
     axu_package_init(p, req, cmd);
     axu_set_data(p, 0, &ack, sizeof(ack));
-    xil_printf("response ack = %d.\r\n", ack);
+    //xil_printf("response ack = %d.\r\n", ack);
     axu_finish_package(p);
     return 0;
 }
@@ -209,10 +220,9 @@ static PRET doTransportMid(A_Package *p, A_Package *res)
     fileid = GetMidID(p);
     offset = GetMidOffset(p);
     datalen = GetMidDatalen(p);
-    xil_printf("do %s, fileid = 0x%x, offset = %d.\r\n", __FUNCTION__, fileid, offset);
+    //xil_printf("do %s, fileid = 0x%x, offset = %d.\r\n", __FUNCTION__, fileid, offset);
     // find info.
     BlockDataInfo *info = findInfo(&(gHandle.gBlockDataList), fileid);
-    //xil_printf("info = 0x%p\r\n", info);
     if(info == NULL){
     	xil_printf("do %s, not find fileid 0x%x.\r\n", __FUNCTION__, fileid);
         errmsg = axu_get_error_msg(A_MID_UID_NOT_FOUND);
@@ -239,11 +249,12 @@ static PRET doTransportMid(A_Package *p, A_Package *res)
         return PRET_ERROR;
     }
     // restructure data.
-    //xil_printf("offset = %d, len = %d.\r\n", offset, datalen);
     memcpy(&(info->data[offset]), &(p->data[TRANSPORT_MID_DATA_OFFSET]), datalen);
     info->recLen += datalen;
     make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
+
     send_upgrade_progress(5+(info->recLen * 75/info->dataLen), "receiving"); // max progress is 80%.
+
     return PRET_OK;
 }
 

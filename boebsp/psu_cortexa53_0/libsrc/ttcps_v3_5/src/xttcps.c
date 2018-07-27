@@ -129,6 +129,12 @@ s32 XTtcPs_CfgInitialize(XTtcPs *InstancePtr, XTtcPs_Config *ConfigPtr,
 	InstancePtr->Config.BaseAddress = EffectiveAddr;
 	InstancePtr->Config.InputClockHz = ConfigPtr->InputClockHz;
 
+
+
+	IsStartResult = XTtcPs_IsStarted(InstancePtr);
+	if(IsStartResult == (u32)TRUE)
+		XTtcPs_Stop(InstancePtr);
+
 	IsStartResult = XTtcPs_IsStarted(InstancePtr);
 	/*
 	 * If the timer counter has already started, return an error

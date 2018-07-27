@@ -28,6 +28,7 @@
 #include "env.h"
 #include "community.h"
 #include "axu_connector.h"
+#include "atimer.h"
 
 typedef enum UPGRADE_FLAG {
     UPGRADE_NONE = 0,
