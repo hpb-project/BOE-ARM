@@ -2,7 +2,7 @@
 the_ROM_image:
 {
 	[fsbl_config]a53_x64
-	[bootloader]/home/luxq/boesd/BOE-ARM/boesd_fsbl/Debug/boesd_fsbl.elf
-	[destination_device = pl]/home/luxq/boesd/BOE-ARM/boesdupgrade/boe_sd_update.bit
-	[destination_cpu = a53-0]/home/luxq/boesd/BOE-ARM/boesd_upgrade/Debug/boesd_upgrade.elf
+	[bootloader]/home/luxq/work/BOE-ARM/boesd_fsbl/Debug/boesd_fsbl.elf
+	[destination_device = pl]/home/luxq/work/BOE-ARM/boesdupgrade/boe_sd_update.bit
+	[destination_cpu = a53-0]/home/luxq/work/BOE-ARM/boesd_upgrade/Debug/boesd_upgrade.elf
 }
