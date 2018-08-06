@@ -17,6 +17,7 @@
 #include "sleep.h"
 #include "flash_oper.h"
 #include "flash_map.h"
+#include "led.h"
 #include "env.h"
 static u8 CmdBfr[8];
 
@@ -104,9 +105,33 @@ void test_env(void)
 	return;
 }
 
+void test_led()
+{
+	ledInit();
+	while(1){
+		ledHigh(LED_1);
+		sleep(2);
+		ledHigh(LED_1 | LED_2);
+		sleep(2);
+		ledHigh(LED_1 | LED_2 | LED_3);
+		sleep(2);
+		ledHigh(LED_1 | LED_2 | LED_3 | LED_4);
+		sleep(2);
+		int slit = 100;
+		while(slit-- > 0){
+			ledLow(LED_ALL);
+			usleep(200000);
+			ledHigh(LED_ALL);
+			usleep(200000);
+		}
+	}
+}
+
 extern void runtest(void)
 {
-    test_flash();
+    //test_flash();
+    at508_test();
+    test_led();
     //test_env();
 }
 

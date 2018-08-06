@@ -220,23 +220,43 @@
 
 /******************************************************************/
 
-/* Definitions for driver CANPS */
-#define XPAR_XCANPS_NUM_INSTANCES 1
+/* Definitions for driver BRAM */
+#define XPAR_XBRAM_NUM_INSTANCES 1U
 
-/* Definitions for peripheral PSU_CAN_1 */
-#define XPAR_PSU_CAN_1_DEVICE_ID 0
-#define XPAR_PSU_CAN_1_BASEADDR 0xFF070000
-#define XPAR_PSU_CAN_1_HIGHADDR 0xFF07FFFF
-#define XPAR_PSU_CAN_1_CAN_CLK_FREQ_HZ 100000000
+/* Definitions for peripheral AXI_BRAM_CTRL_0 */
+#define XPAR_AXI_BRAM_CTRL_0_DEVICE_ID 0U
+#define XPAR_AXI_BRAM_CTRL_0_DATA_WIDTH 32U
+#define XPAR_AXI_BRAM_CTRL_0_ECC 0U
+#define XPAR_AXI_BRAM_CTRL_0_FAULT_INJECT 0U
+#define XPAR_AXI_BRAM_CTRL_0_CE_FAILING_REGISTERS 0U
+#define XPAR_AXI_BRAM_CTRL_0_UE_FAILING_REGISTERS 0U
+#define XPAR_AXI_BRAM_CTRL_0_ECC_STATUS_REGISTERS 0U
+#define XPAR_AXI_BRAM_CTRL_0_CE_COUNTER_WIDTH 0U
+#define XPAR_AXI_BRAM_CTRL_0_ECC_ONOFF_REGISTER 0U
+#define XPAR_AXI_BRAM_CTRL_0_ECC_ONOFF_RESET_VALUE 0U
+#define XPAR_AXI_BRAM_CTRL_0_WRITE_ACCESS 0U
+#define XPAR_AXI_BRAM_CTRL_0_S_AXI_BASEADDR 0xA0000000U
+#define XPAR_AXI_BRAM_CTRL_0_S_AXI_HIGHADDR 0xA0000FFFU
+#define XPAR_AXI_BRAM_CTRL_0_S_AXI_CTRL_BASEADDR 0xFFFFFFFFU 
+#define XPAR_AXI_BRAM_CTRL_0_S_AXI_CTRL_HIGHADDR 0xFFFFFFFFU 
 
 
 /******************************************************************/
 
-/* Canonical definitions for peripheral PSU_CAN_1 */
-#define XPAR_XCANPS_0_DEVICE_ID XPAR_PSU_CAN_1_DEVICE_ID
-#define XPAR_XCANPS_0_BASEADDR 0xFF070000
-#define XPAR_XCANPS_0_HIGHADDR 0xFF07FFFF
-#define XPAR_XCANPS_0_CAN_CLK_FREQ_HZ 100000000
+/* Canonical definitions for peripheral AXI_BRAM_CTRL_0 */
+#define XPAR_BRAM_0_DEVICE_ID XPAR_AXI_BRAM_CTRL_0_DEVICE_ID
+#define XPAR_BRAM_0_DATA_WIDTH 32U
+#define XPAR_BRAM_0_ECC 0U
+#define XPAR_BRAM_0_FAULT_INJECT 0U
+#define XPAR_BRAM_0_CE_FAILING_REGISTERS 0U
+#define XPAR_BRAM_0_UE_FAILING_REGISTERS 0U
+#define XPAR_BRAM_0_ECC_STATUS_REGISTERS 0U
+#define XPAR_BRAM_0_CE_COUNTER_WIDTH 0U
+#define XPAR_BRAM_0_ECC_ONOFF_REGISTER 0U
+#define XPAR_BRAM_0_ECC_ONOFF_RESET_VALUE 0U
+#define XPAR_BRAM_0_WRITE_ACCESS 0U
+#define XPAR_BRAM_0_BASEADDR 0xA0000000U
+#define XPAR_BRAM_0_HIGHADDR 0xA0000FFFU
 
 
 /******************************************************************/
@@ -591,6 +611,29 @@
 
 /******************************************************************/
 
+/* Definitions for driver GPIO */
+#define XPAR_XGPIO_NUM_INSTANCES 1
+
+/* Definitions for peripheral AXI_GPIO_0 */
+#define XPAR_AXI_GPIO_0_BASEADDR 0xA0002000
+#define XPAR_AXI_GPIO_0_HIGHADDR 0xA0002FFF
+#define XPAR_AXI_GPIO_0_DEVICE_ID 0
+#define XPAR_AXI_GPIO_0_INTERRUPT_PRESENT 0
+#define XPAR_AXI_GPIO_0_IS_DUAL 0
+
+
+/******************************************************************/
+
+/* Canonical definitions for peripheral AXI_GPIO_0 */
+#define XPAR_GPIO_0_BASEADDR 0xA0002000
+#define XPAR_GPIO_0_HIGHADDR 0xA0002FFF
+#define XPAR_GPIO_0_DEVICE_ID XPAR_AXI_GPIO_0_DEVICE_ID
+#define XPAR_GPIO_0_INTERRUPT_PRESENT 0
+#define XPAR_GPIO_0_IS_DUAL 0
+
+
+/******************************************************************/
+
 /* Definitions for driver GPIOPS */
 #define XPAR_XGPIOPS_NUM_INSTANCES 1
 
@@ -611,20 +654,13 @@
 /******************************************************************/
 
 /* Definitions for driver IICPS */
-#define XPAR_XIICPS_NUM_INSTANCES 2
+#define XPAR_XIICPS_NUM_INSTANCES 1
 
 /* Definitions for peripheral PSU_I2C_0 */
 #define XPAR_PSU_I2C_0_DEVICE_ID 0
 #define XPAR_PSU_I2C_0_BASEADDR 0xFF020000
 #define XPAR_PSU_I2C_0_HIGHADDR 0xFF02FFFF
 #define XPAR_PSU_I2C_0_I2C_CLK_FREQ_HZ 100000000
-
-
-/* Definitions for peripheral PSU_I2C_1 */
-#define XPAR_PSU_I2C_1_DEVICE_ID 1
-#define XPAR_PSU_I2C_1_BASEADDR 0xFF030000
-#define XPAR_PSU_I2C_1_HIGHADDR 0xFF03FFFF
-#define XPAR_PSU_I2C_1_I2C_CLK_FREQ_HZ 100000000
 
 
 /******************************************************************/
@@ -634,12 +670,6 @@
 #define XPAR_XIICPS_0_BASEADDR 0xFF020000
 #define XPAR_XIICPS_0_HIGHADDR 0xFF02FFFF
 #define XPAR_XIICPS_0_I2C_CLK_FREQ_HZ 100000000
-
-/* Canonical definitions for peripheral PSU_I2C_1 */
-#define XPAR_XIICPS_1_DEVICE_ID XPAR_PSU_I2C_1_DEVICE_ID
-#define XPAR_XIICPS_1_BASEADDR 0xFF030000
-#define XPAR_XIICPS_1_HIGHADDR 0xFF03FFFF
-#define XPAR_XIICPS_1_I2C_CLK_FREQ_HZ 100000000
 
 
 /******************************************************************/
@@ -702,18 +732,18 @@
 /* Definitions for driver LLFIFO */
 #define XPAR_XLLFIFO_NUM_INSTANCES 1U
 
-/* Definitions for peripheral AXI_FIFO_MM_S_0 */
-#define XPAR_AXI_FIFO_MM_S_0_DEVICE_ID 0U
-#define XPAR_AXI_FIFO_MM_S_0_BASEADDR 0xA0000000U
-#define XPAR_AXI_FIFO_MM_S_0_HIGHADDR 0xA0000FFFU
-#define XPAR_AXI_FIFO_MM_S_0_AXI4_BASEADDR 0U
-#define XPAR_AXI_FIFO_MM_S_0_AXI4_HIGHADDR 0U
-#define XPAR_AXI_FIFO_MM_S_0_DATA_INTERFACE_TYPE 0U
+/* Definitions for peripheral AXI2AXIS_AXI_FIFO_MM_S_0 */
+#define XPAR_AXI2AXIS_AXI_FIFO_MM_S_0_DEVICE_ID 0U
+#define XPAR_AXI2AXIS_AXI_FIFO_MM_S_0_BASEADDR 0xA0001000U
+#define XPAR_AXI2AXIS_AXI_FIFO_MM_S_0_HIGHADDR 0xA0001FFFU
+#define XPAR_AXI2AXIS_AXI_FIFO_MM_S_0_AXI4_BASEADDR 0U
+#define XPAR_AXI2AXIS_AXI_FIFO_MM_S_0_AXI4_HIGHADDR 0U
+#define XPAR_AXI2AXIS_AXI_FIFO_MM_S_0_DATA_INTERFACE_TYPE 0U
 
-/* Canonical definitions for peripheral AXI_FIFO_MM_S_0 */
+/* Canonical definitions for peripheral AXI2AXIS_AXI_FIFO_MM_S_0 */
 #define XPAR_AXI_FIFO_0_DEVICE_ID 0U
-#define XPAR_AXI_FIFO_0_BASEADDR 0xA0000000U
-#define XPAR_AXI_FIFO_0_HIGHADDR 0xA0000FFFU
+#define XPAR_AXI_FIFO_0_BASEADDR 0xA0001000U
+#define XPAR_AXI_FIFO_0_HIGHADDR 0xA0001FFFU
 #define XPAR_AXI_FIFO_0_AXI4_BASEADDR 0U
 #define XPAR_AXI_FIFO_0_AXI4_HIGHADDR 0U
 #define XPAR_AXI_FIFO_0_DATA_INTERFACE_TYPE 0U
@@ -768,12 +798,12 @@
 /******************************************************************/
 
 /* Definitions for Fabric interrupts connected to psu_acpu_gic */
-#define XPAR_FABRIC_AXI_FIFO_MM_S_0_INTERRUPT_INTR 121U
+#define XPAR_FABRIC_AXI2AXIS_AXI_FIFO_MM_S_0_INTERRUPT_INTR 121U
 
 /******************************************************************/
 
 /* Canonical definitions for Fabric interrupts connected to psu_acpu_gic */
-#define XPAR_FABRIC_LLFIFO_0_VEC_ID XPAR_FABRIC_AXI_FIFO_MM_S_0_INTERRUPT_INTR
+#define XPAR_FABRIC_LLFIFO_0_VEC_ID XPAR_FABRIC_AXI2AXIS_AXI_FIFO_MM_S_0_INTERRUPT_INTR
 
 /******************************************************************/
 
@@ -982,7 +1012,7 @@
 /******************************************************************/
 
 /* Definitions for driver UARTPS */
-#define XPAR_XUARTPS_NUM_INSTANCES 2
+#define XPAR_XUARTPS_NUM_INSTANCES 1
 
 /* Definitions for peripheral PSU_UART_0 */
 #define XPAR_PSU_UART_0_DEVICE_ID 0
@@ -990,14 +1020,6 @@
 #define XPAR_PSU_UART_0_HIGHADDR 0xFF00FFFF
 #define XPAR_PSU_UART_0_UART_CLK_FREQ_HZ 100000000
 #define XPAR_PSU_UART_0_HAS_MODEM 0
-
-
-/* Definitions for peripheral PSU_UART_1 */
-#define XPAR_PSU_UART_1_DEVICE_ID 1
-#define XPAR_PSU_UART_1_BASEADDR 0xFF010000
-#define XPAR_PSU_UART_1_HIGHADDR 0xFF01FFFF
-#define XPAR_PSU_UART_1_UART_CLK_FREQ_HZ 100000000
-#define XPAR_PSU_UART_1_HAS_MODEM 0
 
 
 /******************************************************************/
@@ -1008,13 +1030,6 @@
 #define XPAR_XUARTPS_0_HIGHADDR 0xFF00FFFF
 #define XPAR_XUARTPS_0_UART_CLK_FREQ_HZ 100000000
 #define XPAR_XUARTPS_0_HAS_MODEM 0
-
-/* Canonical definitions for peripheral PSU_UART_1 */
-#define XPAR_XUARTPS_1_DEVICE_ID XPAR_PSU_UART_1_DEVICE_ID
-#define XPAR_XUARTPS_1_BASEADDR 0xFF010000
-#define XPAR_XUARTPS_1_HIGHADDR 0xFF01FFFF
-#define XPAR_XUARTPS_1_UART_CLK_FREQ_HZ 100000000
-#define XPAR_XUARTPS_1_HAS_MODEM 0
 
 
 /******************************************************************/

@@ -57,6 +57,8 @@
 #include "flash_oper.h"
 #include "version.h"
 #include "atimer.h"
+#include "at508.h"
+#include "led.h"
 #include <time.h>
 
 /*
@@ -78,15 +80,7 @@
 
 extern GlobalHandle gHandle;
 
-static u64 pro_st, pro_so;
-#define PROFILE_START()\
-	pro_st = 0;\
-	atimer_reset();\
 
-
-#define PROFILE_STOP()\
-	pro_so = atimer_gettm();\
-	xil_printf("--PROFILE--time cost %dms.\r\n", pro_so - pro_st);
 /*
  * return value: 0: correct data.
  *               1: magic error.
@@ -178,6 +172,29 @@ int mainloop(void)
     return 0;
 }
 
+int led_failed()
+{
+	while(1){
+		ledHigh(LED_ALL);
+		usleep(200000);
+		ledLow(LED_ALL);
+		usleep(200000);
+	}
+}
+// timer function ,50ms
+int led_running(void *data)
+{
+	static int timecnt = 0;
+	timecnt ++;
+	if(timecnt == 1){
+		ledHigh(LED_1);
+	}else{
+		ledLow(LED_ALL);
+	}
+	timecnt = timecnt%3;
+	return 1;
+}
+
 int main()
 {
     int status = 0;
@@ -192,12 +209,18 @@ int main()
     status = env_init();
     if(status != XST_SUCCESS){
         xil_printf("Env init failed.\n\r");
-        return -1;
+        goto failed;
     }
     status = atimer_init();
     if(status != XST_SUCCESS){
 		xil_printf("timer init failed.\n\r");
-		return -1;
+		goto failed;
+	}
+    status = ledInit();
+    status = at508_init();
+    if(status != XST_SUCCESS){
+		xil_printf("at508 init failed.\n\r");
+		goto failed;
 	}
     gHandle.gEnvHandle = env_get_handle();
     gHandle.gFlashInstancePtr = &gHandle.gEnvHandle->flashInstance;
@@ -205,13 +228,13 @@ int main()
     status = env_get(&gHandle.gEnv);
     if(status != XST_SUCCESS){
         xil_printf("env get failed.\n\r");
-        return -1;
+        goto failed;
     }
 
     status = msg_pool_init(&(gHandle.gMsgPoolIns));
     if(status != XST_SUCCESS){
         xil_printf("fifo init failed.\n\r");
-        return -1;
+        goto failed;
     }
     // 2. check upgrade flag.
     if(gHandle.gEnv.update_flag == UPGRADE_REBOOT){
@@ -219,14 +242,15 @@ int main()
         // response upgrade success.
         gHandle.gEnv.update_flag = UPGRADE_NONE;
         env_update(&gHandle.gEnv);
-        send_upgrade_progress(100, "reboot success.");
     }
 
     xil_printf("Welcome to HPB, SWVer = 0x%02x.\r\n", gAXUVersion);
-
+    atimer_register_timer(led_running, 300, NULL);
     // 3. enter mainloop.
     mainloop();
 
+failed:
+	led_failed();
 
     cleanup_platform();
     return 0;

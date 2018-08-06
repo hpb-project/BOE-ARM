@@ -29,6 +29,12 @@
 									<listOptionValue builtIn="false" value="../../boebsp/psu_cortexa53_0/include"/>
 								</option>
 								<option id="xilinx.gnu.compiler.inferred.swplatform.flags.923003485" name="Software Platform Inferred Flags" superClass="xilinx.gnu.compiler.inferred.swplatform.flags" value="   " valueType="string"/>
+								<option id="xilinx.gnu.compiler.dircategory.includes.720038165" name="Include Paths" superClass="xilinx.gnu.compiler.dircategory.includes" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/libatca}&quot;"/>
+								</option>
+								<option id="xilinx.gnu.compiler.symbols.defined.455413483" superClass="xilinx.gnu.compiler.symbols.defined" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="ATCAPRINTF"/>
+								</option>
 								<inputType id="xilinx.gnu.arm.a53.c.compiler.input.1878368373" name="C source files" superClass="xilinx.gnu.arm.a53.c.compiler.input"/>
 							</tool>
 							<tool id="xilinx.gnu.arm.a53.cxx.toolchain.compiler.debug.1703817611" name="ARM v8 g++ compiler" superClass="xilinx.gnu.arm.a53.cxx.toolchain.compiler.debug">
@@ -51,7 +57,7 @@
 									<listOptionValue builtIn="false" value="-Wl,--start-group,-lxilsecure,-lxil,-lgcc,-lc,--end-group"/>
 								</option>
 								<option id="xilinx.gnu.c.linker.option.lscript.1305609849" name="Linker Script" superClass="xilinx.gnu.c.linker.option.lscript" value="../src/lscript.ld" valueType="string"/>
-								<option id="xilinx.gnu.c.link.option.libs.2120036830" name="Libraries (-l)" superClass="xilinx.gnu.c.link.option.libs" valueType="libs"/>
+								<option id="xilinx.gnu.c.link.option.libs.2120036830" name="Libraries (-l)" superClass="xilinx.gnu.c.link.option.libs"/>
 								<inputType id="xilinx.gnu.linker.input.615366752" superClass="xilinx.gnu.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>

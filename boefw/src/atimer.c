@@ -14,6 +14,7 @@
 #include "xttcps.h"
 #include "xscugic.h"
 #include "xil_printf.h"
+#include "atimer.h"
 
 /************************** Constant Definitions *****************************/
 
@@ -44,6 +45,14 @@ typedef struct {
 	u16 Options;	/* Option settings */
 } TmrCntrSetup;
 
+typedef struct {
+	TimerFunc func;
+	u64 internal_ms;
+	u64 tickcount;
+	void *userdata;
+	u8    bUsed;
+}TmrRegisterInfo;
+
 static int TmrRtcInterruptExample(void);  /* Main test */
 
 /* Set up routines for timer counters */
@@ -70,6 +79,7 @@ static XScuGic InterruptController;  	/* Interrupt controller instance */
 static u8 ErrorCount;		/* Errors seen at interrupt time */
 static u32 TickCount;		/* Ticker interrupts between seconds change */
 static volatile u64 msCount;
+static TmrRegisterInfo gRegisterInfo[MAX_TIMER_FUNC_NUM];
 
 int atimer_init(void)
 {
@@ -293,6 +303,24 @@ static int SetupInterruptSystem(u16 IntcDeviceID,
 	return XST_SUCCESS;
 }
 
+static void refresh_register_function()
+{
+	int i = 0;
+	for(i = 0; i < MAX_TIMER_FUNC_NUM; i++){
+		TmrRegisterInfo *info = &(gRegisterInfo[i]);
+		if(info->bUsed){
+			info->tickcount++;
+			if(info->tickcount >= info->internal_ms){
+				int ret = info->func(info->userdata);
+				if(ret == 0){
+					info->bUsed = 0;
+				}else{
+					info->tickcount = 0;
+				}
+			}
+		}
+	}
+}
 /***************************************************************************/
 /**
 *
@@ -325,6 +353,7 @@ static void TickHandler(void *CallBackRef)
 		if (TICKS_PER_CHANGE_PERIOD == TickCount) {
 			TickCount = 0;
 			msCount++;
+			refresh_register_function();
 		}
 
 	}
@@ -345,4 +374,27 @@ void atimer_reset()
 u64 atimer_gettm()
 {
 	return msCount;
+}
+
+int atimer_register_timer(TimerFunc func, u64 internal_ms, void *userdata)
+{
+	int i = 0;
+	if(func == NULL || internal_ms == 0){
+		return -1;
+	}
+	for(i = 0; i < MAX_TIMER_FUNC_NUM; i++)
+	{
+		if(gRegisterInfo[i].bUsed == 0){
+			gRegisterInfo[i].func = func;
+			gRegisterInfo[i].internal_ms = internal_ms;
+			gRegisterInfo[i].userdata = userdata;
+			gRegisterInfo[i].tickcount = 0;
+			gRegisterInfo[i].bUsed = 1;
+			break;
+		}
+	}
+	if(i >= MAX_TIMER_FUNC_NUM){
+		return -2;
+	}
+	return 0;
 }
