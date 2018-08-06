@@ -847,7 +847,7 @@ int FlashWrite(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr
 		Address += wlen;
 		ByteCount -= wlen;
 		WriteBfrPtr += wlen;
-		xil_printf("write len = %d.\r\n", wlen);
+		//xil_printf("write len = %d.\r\n", wlen);
 	}while(ByteCount > 0);
 
 	return 0;

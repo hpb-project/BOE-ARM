@@ -361,9 +361,9 @@ int led_upgrade_failed()
 	u8 led = 0xf;
 	while(1){
 		ledHigh(led);
-		usleep(300000);
+		usleep(200000);
 		ledLow(led);
-		usleep(300000);
+		usleep(200000);
 	}
 	return 0;
 }
@@ -373,7 +373,7 @@ int main()
 
     init_platform();
     xil_printf("------------------- Enter SD Upgrade --------------\r\n");
-#if 1
+#if 0
     extern int runtest();
     runtest();
 
