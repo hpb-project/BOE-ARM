@@ -69,7 +69,7 @@ static int findValidEnv(EnvHandle *handle, u32 sAddress, EnvContent *genv)
     }while(sAddress < handle->end_addr);
 
     if (lastAddr != 0) {
-        printf("find valid env find, at 0x%x, env.boeid = %d.\r\n", lastAddr, lastEnv.boeid);
+        printf("find valid env find, at 0x%x, env.seq_id = %ld.\r\n", lastAddr, lastEnv.seq_id);
         handle->current_addr = lastAddr;
         memcpy(genv, &lastEnv, sizeof(EnvContent));
         return XST_SUCCESS;

@@ -22,11 +22,12 @@ typedef struct EnvContent {
 
 
     u32 bootaddr;		// for multiboot.
-    u32 boeid;			// BOEID for the board.
-    u8  bindAccount[32];// bind account address for the board.
-    u8  reversed_3[32]; // old bind id.
 
-    u8  reversed_2[1956];
+    u8  bindAccount[40];// bind account address for the board.
+    u8  board_sn[21];
+    u8  board_mac[6];
+    u32 reversed_3;		// used to test.
+    u8  reversed_2[1953];
 
     u8  reversed_0[3];
     u8  end_magic; 		// 0xC5;

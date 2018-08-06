@@ -88,13 +88,13 @@ void test_env(void)
 			return;
 		}
 		if(i != 0){
-			printf("get boeid = %d.\n", env.boeid);
-			if(env.boeid != i){
-				printf("get boeid failed, id=%d,should = %d.\n", env.boeid, i);
+			printf("get reversed_3 = %d.\n", env.reversed_3);
+			if(env.reversed_3 != i){
+				printf("get reversed_3 failed, id=%d,should = %d.\n", env.reversed_3, i);
 				return;
 			}
 		}
-		env.boeid = i+1;
+		env.reversed_3 = i+1;
 		status = env_update(&env);
 		if(status != XST_SUCCESS){
 			printf("%d, env update failed\n", i);

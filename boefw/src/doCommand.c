@@ -70,11 +70,11 @@ int make_response_ack(A_Package *req, ACmd cmd, u8 ack, A_Package *p)
     return 0;
 }
 
-static int make_response_boeid(A_Package *req, ACmd cmd, A_Package *p)
+static int make_response_sn(A_Package *req, ACmd cmd, A_Package *p)
 {
     axu_package_init(p, req, cmd);
-    axu_set_data(p, 0, (u8*)&gHandle.gEnv.boeid, sizeof(gHandle.gEnv.boeid));
-    xil_printf("response boeid = 0x%x\r\n", gHandle.gEnv.boeid);
+    axu_set_data(p, 0, gHandle.gEnv.board_sn, sizeof(gHandle.gEnv.board_sn));
+    xil_printf("response sn = %s\r\n", gHandle.gEnv.board_sn);
     axu_finish_package(p);
     return 0;
 }
@@ -522,10 +522,10 @@ static PRET doGetRandom(A_Package *p, A_Package *res)
 
     return PRET_OK;
 }
-static PRET doGetBoeID(A_Package *p, A_Package *res)
+static PRET doGetBoeSN(A_Package *p, A_Package *res)
 {
 	xil_printf("do: %s\r\n", __FUNCTION__);
-	make_response_boeid(p, ACMD_BP_RES_ACK,res);
+	make_response_sn(p, ACMD_BP_RES_ACK,res);
     return PRET_OK;
 }
 static PRET doGetHWVer(A_Package *p, A_Package *res)
@@ -547,12 +547,10 @@ static PRET doGetAXUVer(A_Package *p, A_Package *res)
     return PRET_OK;
 }
 
-static PRET doSetBoeID(A_Package *p, A_Package *res)
+static PRET doSetBoeSN(A_Package *p, A_Package *res)
 {
-	u32 nBoeID = 0;
 	char *errmsg = NULL;
-	memcpy(&nBoeID, p->data, sizeof(u32));
-	gHandle.gEnv.boeid = nBoeID;
+	memcpy(gHandle.gEnv.board_sn, p->data, 20);
 
 	xil_printf("do: %s\r\n", __FUNCTION__);
 	if(env_update(&(gHandle.gEnv)) == 0) {
@@ -647,14 +645,13 @@ static PRET doBindID(A_Package *p, A_Package *res)
 static PRET doBindAccount(A_Package *p, A_Package *res)
 {
 	char *errmsg = NULL;
-	char msgbuf[PACKAGE_MIN_SIZE] = {0};
 
 	xil_printf("do: %s\r\n", __FUNCTION__);
-	//for(int i = 0; i< sizeof(gEmpty256); i++)
+	//for(int i = 0; i< sizeof(gHandle.gEnv.bindAccount); i++)
 	//{
 	//	xil_printf("ra[%d] = 0x%02x\r\n", i, p->data[i]);
 	//}
-	memcpy(gHandle.gEnv.bindAccount, p->data, sizeof(gEmpty256));
+	memcpy(gHandle.gEnv.bindAccount, p->data, sizeof(gHandle.gEnv.bindAccount));
 	if(env_update(&(gHandle.gEnv)) == 0) {
 		gHandle.gBindAccount = 1;
 		make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
@@ -707,11 +704,11 @@ Processor gCmdProcess[ACMD_END] = {
 	    [ACMD_PB_UPGRADE_ABORT] 	= {ACMD_PB_UPGRADE_ABORT, NULL, doUpgradeAbort},
 	    [ACMD_PB_RESET] 			= {ACMD_PB_RESET, NULL, doReset},
 	    [ACMD_PB_GET_RANDOM] 		= {ACMD_PB_GET_RANDOM, NULL, doGetRandom},
-	    [ACMD_PB_GET_BOEID] 		= {ACMD_PB_GET_BOEID, NULL, doGetBoeID},
+	    [ACMD_PB_GET_SN] 		= {ACMD_PB_GET_SN, NULL, doGetBoeSN},
 	    [ACMD_PB_GET_HW_VER] 		= {ACMD_PB_GET_HW_VER, NULL, doGetHWVer},
 	    [ACMD_PB_GET_FW_VER] 		= {ACMD_PB_GET_FW_VER, NULL, doGetFWVer},
 	    [ACMD_PB_GET_AXU_VER] 		= {ACMD_PB_GET_AXU_VER, NULL, doGetAXUVer},
-	    [ACMD_PB_SET_BOEID] 		= {ACMD_PB_SET_BOEID, NULL, doSetBoeID},
+	    [ACMD_PB_SET_SN] 		= {ACMD_PB_SET_SN, NULL, doSetBoeSN},
 
 		[ACMD_PB_BIND_ACCOUNT] 		= {ACMD_PB_BIND_ACCOUNT, NULL, doBindAccount},
 		[ACMD_PB_GET_BINDINFO] 		= {ACMD_PB_GET_BINDINFO, NULL, doGetBindAccount},
@@ -719,6 +716,13 @@ Processor gCmdProcess[ACMD_END] = {
 //		[ACMD_PB_CHECK_BIND] 		= {ACMD_PB_CHECK_BIND, NULL, doCheckBind},
 //		[ACMD_PB_BIND_ID] 			= {ACMD_PB_BIND_ID, NULL, doBindID},
 //		[ACMD_PB_UNBIND] 			= {ACMD_PB_UNBIND, NULL, doUnBind},
+
+		[ACMD_PB_GENKEY]			= {ACMD_PB_GENKEY, NULL, NULL},
+		[ACMD_PB_GET_PUBKEY]		= {ACMD_PB_GET_PUBKEY, NULL, NULL},
+		[ACMD_PB_LOCK_PRIKEY]		= {ACMD_PB_LOCK_PRIKEY, NULL, NULL},
+		[ACMD_PB_VERIFY]		= {ACMD_PB_VERIFY, NULL, NULL},
+		[ACMD_PB_SET_MAC]		= {ACMD_PB_SET_MAC, NULL, NULL},
+		[ACMD_PB_GET_MAC]		= {ACMD_PB_GET_MAC, NULL, NULL},
 
 };
 
