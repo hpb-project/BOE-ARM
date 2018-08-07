@@ -14,6 +14,8 @@ int at508_release(void);
 int at508_get_sernum(u8 *sernum, int buflen);
 // the function will general a private key in atecc internal, and return 64bytes pubkey format in big-endian.
 int at508_genkey(u8 *pubkey, int buflen);
+
+int at508_getpubkey(u8 *pubkey, int buflen);
 // the function will lock private key slot and can't genkey again.
 int at508_lock_privatekey(void);
 // hash is 32bytes, and signature is 64bytes format in big-endian.

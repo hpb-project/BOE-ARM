@@ -102,6 +102,12 @@ const char *gErrMsg[] = {
 		"flash write err",
 		"upgrade abort err",
 		"version err",
+		"bind err",
+		"hwsign err",
+		"genkey err",
+		"get pubkey err",
+		"lock pk err",
+		"hw verify err",
 		NULL,
 };
 char *axu_get_error_msg(A_Error ecode)

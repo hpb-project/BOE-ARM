@@ -12,6 +12,7 @@
 #include "version.h"
 #include "doCommand.h"
 #include "atimer.h"
+#include "at508.h"
 static u8 gEmpty256[32] = {0};
 static u8 CmdBfr[8];
 
@@ -42,10 +43,18 @@ static int make_response_version(A_Package *req, ACmd cmd, u8 version, A_Package
 
 static int make_response_random(A_Package *req, ACmd cmd, A_Package *p)
 {
-	uint32_t r = genrandom();
-	xil_printf("random = %d\r\n", r);
+	u8 rdm[32];
+
+	int status = at508_get_random(rdm, sizeof(rdm));
+	if(status != PRET_OK){
+		for(int i = 0; i < 8; i++){
+			u32 r = genrandom();
+			memcpy(&rdm[i*4], &r, sizeof(r));
+		}
+	}
+
     axu_package_init(p, req, cmd);
-    axu_set_data(p, 0, (u8*)&r, sizeof(r));
+    axu_set_data(p, 0, rdm, sizeof(rdm));
     axu_finish_package(p);
     return 0;
 }
@@ -78,6 +87,15 @@ static int make_response_sn(A_Package *req, ACmd cmd, A_Package *p)
     axu_finish_package(p);
     return 0;
 }
+
+static int make_response_mac(A_Package *req, ACmd cmd, A_Package *p)
+{
+    axu_package_init(p, req, cmd);
+    axu_set_data(p, 0, gHandle.gEnv.board_mac, sizeof(gHandle.gEnv.board_mac));
+    axu_finish_package(p);
+    return 0;
+}
+
 
 int make_response_error(A_Package *req, ACmd cmd, u8 err_code, char*err_info, int len, A_Package *p)
 {
@@ -511,7 +529,7 @@ static PRET doReset(A_Package *p, A_Package *res)
 	make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
 	msg_pool_txsend(gHandle.gMsgPoolIns, res, axu_package_len(res));
 
-	GoReset();
+	GoMultiBoot(0);
     return PRET_OK;
 }
 
@@ -528,6 +546,13 @@ static PRET doGetBoeSN(A_Package *p, A_Package *res)
 	make_response_sn(p, ACMD_BP_RES_ACK,res);
     return PRET_OK;
 }
+static PRET doGetBoeMAC(A_Package *p, A_Package *res)
+{
+	xil_printf("do: %s\r\n", __FUNCTION__);
+	make_response_mac(p, ACMD_BP_RES_ACK,res);
+    return PRET_OK;
+}
+
 static PRET doGetHWVer(A_Package *p, A_Package *res)
 {
 	xil_printf("do: %s\r\n", __FUNCTION__);
@@ -561,6 +586,22 @@ static PRET doSetBoeSN(A_Package *p, A_Package *res)
 	}
     return PRET_OK;
 }
+
+static PRET doSetBoeMAC(A_Package *p, A_Package *res)
+{
+	char *errmsg = NULL;
+	memcpy(gHandle.gEnv.board_mac, p->data, 6);
+
+	xil_printf("do: %s\r\n", __FUNCTION__);
+	if(env_update(&(gHandle.gEnv)) == 0) {
+		make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
+	}else{
+		errmsg = axu_get_error_msg(A_ENV_UPDATE_ERROR);
+		make_response_error(p, ACMD_BP_RES_ERR, A_ENV_UPDATE_ERROR, errmsg, strlen(errmsg), res);
+	}
+    return PRET_OK;
+}
+
 #if 0 // remove unbind at 2018-6-20
 static PRET doUnBind(A_Package *p, A_Package *res)
 {
@@ -662,30 +703,31 @@ static PRET doBindAccount(A_Package *p, A_Package *res)
     return PRET_OK;
 }
 
-static void hwsign(u8 *src, int srclen, u8 *sign, int slen)
-{
-	int len = srclen > slen ? slen : srclen;
-	memset(sign, 0x0, slen);
-	for(int i = 0; i < len; i++)
-	{
-		sign[i] = src[i]<<2;
-	}
-	return;
-}
 static PRET doHWSign(A_Package *p, A_Package *res)
 {
 	int datalen = p->header.body_length;
 	u8 *sdata = p->data;
+	char *errmsg = NULL;
+	if(datalen != 32){
+		errmsg = axu_get_error_msg(A_HWSIGN_ERROR);
+		make_response_error(p, ACMD_BP_RES_ERR, A_HWSIGN_ERROR, errmsg, strlen(errmsg), res);
+		return PRET_ERROR;
+	}
+	u8 hash[32];
+	u8 signature[64];
+	memcpy(hash, sdata, 32);
+	int status = at508_sign(hash, signature, sizeof(signature));
+	if(status != PRET_OK){
+		errmsg = axu_get_error_msg(A_HWSIGN_ERROR);
+		make_response_error(p, ACMD_BP_RES_ERR, A_HWSIGN_ERROR, errmsg, strlen(errmsg), res);
+		return PRET_ERROR;
+	}
 
-	// todo: change checksum to other function.
-	u8 result[65];
-	hwsign(sdata, datalen, result, sizeof(result));
-
-	int plen = sizeof(result) + sizeof(A_Package);
+	int plen = sizeof(signature) + sizeof(A_Package);
 	A_Package *sp = (A_Package*)malloc(plen);
-	sp->header.body_length = sizeof(result);
+	sp->header.body_length = sizeof(signature);
 	axu_package_init(sp, p, ACMD_BP_RES_ACK);
-	axu_set_data(sp, 0, (u8*)&result, sizeof(result));
+	axu_set_data(sp, 0, signature, sizeof(signature));
 	axu_finish_package(sp);
 	msg_pool_txsend(gHandle.gMsgPoolIns, sp, axu_package_len(sp));
 	axu_package_free(sp);
@@ -693,6 +735,104 @@ static PRET doHWSign(A_Package *p, A_Package *res)
 	xil_printf("do: %s\r\n", __FUNCTION__);
 
     return PRET_NORES;
+}
+
+static PRET doGenKey(A_Package *p, A_Package *res)
+{
+	char *errmsg = NULL;
+	u8 pubkey[64];
+
+	int status = at508_genkey(pubkey, sizeof(pubkey));
+	if(status != PRET_OK){
+		errmsg = axu_get_error_msg(A_GENKEY_ERROR);
+		make_response_error(p, ACMD_BP_RES_ERR, A_GENKEY_ERROR, errmsg, strlen(errmsg), res);
+		return PRET_ERROR;
+	}
+
+	int plen = sizeof(pubkey) + sizeof(A_Package);
+	A_Package *sp = (A_Package*)malloc(plen);
+	sp->header.body_length = sizeof(pubkey);
+	axu_package_init(sp, p, ACMD_BP_RES_ACK);
+	axu_set_data(sp, 0, pubkey, sizeof(pubkey));
+	axu_finish_package(sp);
+	msg_pool_txsend(gHandle.gMsgPoolIns, sp, axu_package_len(sp));
+	axu_package_free(sp);
+
+	xil_printf("do: %s\r\n", __FUNCTION__);
+
+    return PRET_NORES;
+}
+
+static PRET doGetPubkey(A_Package *p, A_Package *res)
+{
+	char *errmsg = NULL;
+	u8 pubkey[64];
+
+	int status = at508_getpubkey(pubkey, sizeof(pubkey));
+	if(status != PRET_OK){
+		errmsg = axu_get_error_msg(A_GETPUBKEY_ERROR);
+		make_response_error(p, ACMD_BP_RES_ERR, A_GETPUBKEY_ERROR, errmsg, strlen(errmsg), res);
+		return PRET_ERROR;
+	}
+
+	int plen = sizeof(pubkey) + sizeof(A_Package);
+	A_Package *sp = (A_Package*)malloc(plen);
+	sp->header.body_length = sizeof(pubkey);
+	axu_package_init(sp, p, ACMD_BP_RES_ACK);
+	axu_set_data(sp, 0, pubkey, sizeof(pubkey));
+	axu_finish_package(sp);
+	msg_pool_txsend(gHandle.gMsgPoolIns, sp, axu_package_len(sp));
+	axu_package_free(sp);
+
+	xil_printf("do: %s\r\n", __FUNCTION__);
+
+    return PRET_NORES;
+}
+static PRET doLockPk(A_Package *p, A_Package *res)
+{
+	char *errmsg = NULL;
+
+	int status = at508_lock_privatekey();
+	if(status != PRET_OK){
+		errmsg = axu_get_error_msg(A_LOCK_PK_ERROR);
+		make_response_error(p, ACMD_BP_RES_ERR, A_LOCK_PK_ERROR, errmsg, strlen(errmsg), res);
+		return PRET_ERROR;
+	}
+	make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
+
+	xil_printf("do: %s\r\n", __FUNCTION__);
+
+    return PRET_OK;
+}
+
+static PRET doHWVerify(A_Package *p, A_Package *res)
+{
+	int datalen = p->header.body_length;
+	u8 *sdata = p->data;
+	char *errmsg = NULL;
+	if(datalen < 160){
+		errmsg = axu_get_error_msg(A_HWVERIFY_ERROR);
+		make_response_error(p, ACMD_BP_RES_ERR, A_HWVERIFY_ERROR, errmsg, strlen(errmsg), res);
+		return PRET_ERROR;
+	}
+	u8 hash[32];
+	u8 signature[64];
+	u8 pubkey[64];
+	memcpy(hash, sdata, 32);
+	memcpy(signature, sdata+32, 64);
+	memcpy(pubkey, sdata+32+64, 64);
+	u8 is_verified = 0;
+	int status = at508_verify(hash, signature, pubkey, &is_verified);
+	if(status != PRET_OK){
+		errmsg = axu_get_error_msg(A_HWVERIFY_ERROR);
+		make_response_error(p, ACMD_BP_RES_ERR, A_HWVERIFY_ERROR, errmsg, strlen(errmsg), res);
+		return PRET_ERROR;
+	}
+
+	make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
+
+	xil_printf("do: %s\r\n", __FUNCTION__);
+	return PRET_OK;
 }
 
 Processor gCmdProcess[ACMD_END] = {
@@ -711,18 +851,18 @@ Processor gCmdProcess[ACMD_END] = {
 	    [ACMD_PB_SET_SN] 		= {ACMD_PB_SET_SN, NULL, doSetBoeSN},
 
 		[ACMD_PB_BIND_ACCOUNT] 		= {ACMD_PB_BIND_ACCOUNT, NULL, doBindAccount},
-		[ACMD_PB_GET_BINDINFO] 		= {ACMD_PB_GET_BINDINFO, NULL, doGetBindAccount},
+		[ACMD_PB_GET_ACCOUNT] 		= {ACMD_PB_GET_ACCOUNT, NULL, doGetBindAccount},
 		[ACMD_PB_HW_SIGN] 			= {ACMD_PB_HW_SIGN, NULL, doHWSign},
 //		[ACMD_PB_CHECK_BIND] 		= {ACMD_PB_CHECK_BIND, NULL, doCheckBind},
 //		[ACMD_PB_BIND_ID] 			= {ACMD_PB_BIND_ID, NULL, doBindID},
 //		[ACMD_PB_UNBIND] 			= {ACMD_PB_UNBIND, NULL, doUnBind},
 
-		[ACMD_PB_GENKEY]			= {ACMD_PB_GENKEY, NULL, NULL},
-		[ACMD_PB_GET_PUBKEY]		= {ACMD_PB_GET_PUBKEY, NULL, NULL},
-		[ACMD_PB_LOCK_PRIKEY]		= {ACMD_PB_LOCK_PRIKEY, NULL, NULL},
-		[ACMD_PB_VERIFY]		= {ACMD_PB_VERIFY, NULL, NULL},
-		[ACMD_PB_SET_MAC]		= {ACMD_PB_SET_MAC, NULL, NULL},
-		[ACMD_PB_GET_MAC]		= {ACMD_PB_GET_MAC, NULL, NULL},
+		[ACMD_PB_GENKEY]			= {ACMD_PB_GENKEY, NULL, doGenKey},
+		[ACMD_PB_GET_PUBKEY]		= {ACMD_PB_GET_PUBKEY, NULL, doGetPubkey},
+		[ACMD_PB_LOCK_PRIKEY]		= {ACMD_PB_LOCK_PRIKEY, NULL, doLockPk},
+		[ACMD_PB_VERIFY]		= {ACMD_PB_VERIFY, NULL, doHWVerify},
+		[ACMD_PB_SET_MAC]		= {ACMD_PB_SET_MAC, NULL, doSetBoeMAC},
+		[ACMD_PB_GET_MAC]		= {ACMD_PB_GET_MAC, NULL, doGetBoeMAC},
 
 };
 

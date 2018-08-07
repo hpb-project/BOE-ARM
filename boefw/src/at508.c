@@ -100,6 +100,23 @@ int at508_genkey(u8 *pubkey, int buflen)
 
 	return status;
 }
+int at508_getpubkey(u8 *pubkey, int buflen)
+{
+	ATCA_STATUS status;
+
+	if(buflen < 64){
+		xil_printf("pubkey buffer length not enough.\r\n");
+		return -1;
+	}
+	status = atcab_get_pubkey( PrivateKeySlot, pubkey);
+	if(status != ATCA_SUCCESS){
+		xil_printf("atcab genkey failed.\r\n");
+		return status;
+	}
+
+	return status;
+}
+
 // if we not get lock private key command, not call this function.
 int at508_lock_privatekey()
 {
