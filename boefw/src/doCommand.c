@@ -823,14 +823,13 @@ static PRET doHWVerify(A_Package *p, A_Package *res)
 	memcpy(pubkey, sdata+32+64, 64);
 	u8 is_verified = 0;
 	int status = at508_verify(hash, signature, pubkey, &is_verified);
-	if(status != PRET_OK){
+	if(status != PRET_OK || (is_verified == 0)){
 		errmsg = axu_get_error_msg(A_HWVERIFY_ERROR);
 		make_response_error(p, ACMD_BP_RES_ERR, A_HWVERIFY_ERROR, errmsg, strlen(errmsg), res);
 		return PRET_ERROR;
 	}
 
 	make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
-
 	xil_printf("do: %s\r\n", __FUNCTION__);
 	return PRET_OK;
 }
