@@ -31,7 +31,7 @@ typedef struct ImageHeader{
 typedef struct UpgradeImgInfo{
 	char imageName[100];
 	u8   *imgBuf;
-	u32  imgLen;
+	u64  imgLen;
 	u32  pAddr;        	// partation start addr
 	u32  pLen;      	// partation len
 }UpgradeImgInfo;
@@ -201,11 +201,13 @@ static int upgradeBin(Handle *handle, UpgradeImgInfo *info)
 		xil_printf("Flash erase 0x%x, len 0x%x failed.\r\n", pAddr, pLen);
 		return status;
 	}
+	xil_printf("Flash erase 0x%x, len 0x%x finished.\r\n", pAddr, pLen);
 	status = FlashWrite(QspiPsuPtr, pAddr, imglen, pdata);
 	if(status != XST_SUCCESS){
 		xil_printf("Flash write 0x%x, len 0x%x failed.\r\n", pAddr, imglen);
 		return status;
 	}
+	xil_printf("Flash write 0x%x, len 0x%x finished.\r\n", pAddr, imglen);
 	// recheck
 	status = FlashRead(QspiPsuPtr, pAddr, imglen, CmdBfr, buf);
 	if(status != XST_SUCCESS){

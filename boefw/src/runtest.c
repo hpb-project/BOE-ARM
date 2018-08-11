@@ -117,20 +117,21 @@ void test_led()
 		sleep(2);
 		ledHigh(LED_1 | LED_2 | LED_3 | LED_4);
 		sleep(2);
-		int slit = 100;
+		int slit = 10;
 		while(slit-- > 0){
 			ledLow(LED_ALL);
 			usleep(200000);
 			ledHigh(LED_ALL);
 			usleep(200000);
 		}
+		break;
 	}
 }
 
 extern void runtest(void)
 {
     //test_flash();
-    at508_test();
+    //at508_test();
     test_led();
     //test_env();
 }

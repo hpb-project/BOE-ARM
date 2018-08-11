@@ -13,39 +13,29 @@
 
 //#define TEST_HPB
 #ifdef TEST_HPB
-#define FLASH_BASEADDR 	(0)
-#define FLASH_SIZE     	(0x1000000)    // 16MB
-#define FLASH_END 		(FLASH_BASEADDR + FLASH_SIZE)
-#define GOLDEN_OFFSET 	(FLASH_BASEADDR)
-#define GOLDEN_SIZE   	(0x500000)		// 2MB
-#define ENV_OFFSET		(GOLDEN_OFFSET + GOLDEN_SIZE)
-#define ENV_SIZE		(0x100000)		// 1MB
-#define IMAGE_1_OFFSET  (ENV_OFFSET + ENV_SIZE)
-#define IMAGE_1_SIZE    (0x200000)		// 4MB
-#define IMAGE_2_OFFSET  (IMAGE_1_OFFSET + IMAGE_1_SIZE)
-#define IMAGE_2_SIZE    (0x200000)		// 4MB
-#define FLASH_USE_END   (IMAGE_2_OFFSET+IMAGE_2_SIZE)
-
 #else  // test boe
 #define FLASH_BASEADDR 	(0)
 #define FLASH_SIZE     	(0x4000000)    // 64MB
 #define FLASH_END 		(FLASH_BASEADDR + FLASH_SIZE)
 #define GOLDEN_OFFSET 	(FLASH_BASEADDR)
-#define GOLDEN_SIZE   	(0x400000)		// 4MB
+#define GOLDEN_SIZE   	(0x200000)		// 2MB
 #define ENV_OFFSET		(GOLDEN_OFFSET + GOLDEN_SIZE)
 #define ENV_SIZE		(0x200000)		// 2MB
-#define IMAGE_1_OFFSET  (ENV_OFFSET + ENV_SIZE)
-#define IMAGE_1_SIZE    (0x1800000)		// 24MB
+#define REVERSED_OFFSET (ENV_OFFSET + ENV_SIZE)
+#define REVERSED_SIZE   (0x400000)		// 4MB
+#define IMAGE_1_OFFSET  (REVERSED_OFFSET + REVERSED_SIZE)
+#define IMAGE_1_SIZE    (0x1B00000)		// 28MB
 #define IMAGE_2_OFFSET  (IMAGE_1_OFFSET + IMAGE_1_SIZE)
-#define IMAGE_2_SIZE    (0x1800000)		// 24MB
-#define FLASH_USE_END   (IMAGE_2_OFFSET+IMAGE_2_SIZE)
+#define IMAGE_2_SIZE    (0x1B00000)		// 28MB
+#define FLASH_USE_END   (ENV_OFFSET+ENV_SIZE)
 #endif
 
 static FPartation gDefPartationList[] = {
     {0, FM_GOLDEN_PNAME, GOLDEN_OFFSET, GOLDEN_SIZE},
-    {1, FM_ENV_PNAME, ENV_OFFSET, ENV_SIZE},
+	{1, FM_ENV_PNAME, ENV_OFFSET, ENV_SIZE},
     {2, FM_IMAGE1_PNAME, IMAGE_1_OFFSET, IMAGE_1_SIZE},
     {3, FM_IMAGE2_PNAME, IMAGE_2_OFFSET, IMAGE_2_SIZE},
+
 };
 
 int FM_Print(FPartation *p)
@@ -65,7 +55,7 @@ int FM_GetPartation(char *pName, FPartation *partation)
         FPartation *fp = &(gDefPartationList[i]);
         if(strcmp(fp->pName, pName) == 0){
             xil_printf("copy fpinfo %s.\r\n", fp->pName);
-            //FM_Print(fp);
+            FM_Print(fp);
             memcpy(partation, fp, sizeof(FPartation));
             return XST_SUCCESS;
         }

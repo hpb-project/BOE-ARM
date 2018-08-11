@@ -126,24 +126,24 @@ void send_upgrade_progress(u8 progress, char *msg)
 #define GetStartID(pack)                (*(u32*)(&(pack->data[1])))
 #define GetStartCHK(pack)               (*(u32*)(&(pack->data[1+4])))
 #define GetStartTotallen(pack)          (*(u32*)(&(pack->data[1+4+4])))
-#define GetHWVersion(pack)				(pack->data[1+4+4+4])
-#define GetFWVersion(pack)				(pack->data[1+4+4+4+1])
-#define GetAXUVersion(pack)				(pack->data[1+4+4+4+1+1])
+#define GetHVersion(pack)				(pack->data[1+4+4+4])
+#define GetMVersion(pack)				(pack->data[1+4+4+4+1])
+#define GetFVersion(pack)				(pack->data[1+4+4+4+1+1])
+#define GetDVersion(pack)				(pack->data[1+4+4+4+1+1+1])
 
 static int checkVersion(A_Package *p)
 {
-	u8 nhwVer = GetHWVersion(p);
-	u8 nbfVer = GetFWVersion(p);
-	u8 naxuVer = GetAXUVersion(p);
-	if(vMajor(nhwVer) == vMajor(gHWVersion)
-			&& vMinor(nhwVer) >= vMinor(gHWVersion))
+	u8 nhVer = GetHVersion(p);
+	u8 nmVer = GetMVersion(p);
+	u8 nfVer = GetFVersion(p);
+	u8 ndVer = GetDVersion(p);
+	if(vMajor(nhVer) == vMajor(gVersion.H)
+			&& vMinor(nhVer) >= vMinor(gVersion.H))
 	{
-		if(nbfVer >= gBFVersion && naxuVer >= gAXUVersion){
-			if((nhwVer == gHWVersion) && (nbfVer == gBFVersion) && (naxuVer == gAXUVersion)){
-				return 1;
-			}
+		u32 nvcnt = nmVer << 16 | nfVer << 8 | ndVer;
+		u32 ovcnt = gVersion.M << 16 | gVersion.F << 8 | gVersion.D;
+		if(nvcnt > ovcnt)
 			return 0;
-		}
 	}
 	return 1;
 }
@@ -462,6 +462,7 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
     if(XST_SUCCESS == env_update(&(gHandle.gEnv))){
     	xil_printf("do %s, env_upgrade finished.\r\n", __FUNCTION__);
     	make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
+    	msg_pool_txsend(gHandle.gMsgPoolIns, res, axu_package_len(res));
     }else{
     	xil_printf("do %s, env_upgrade failed.\r\n", __FUNCTION__);
     	errmsg = axu_get_error_msg(A_ENV_UPDATE_ERROR);
@@ -473,7 +474,7 @@ static PRET doUpgradeStart(A_Package *p, A_Package *res)
     //u32 addr = GetRealAddr(gHandle.gFlashInstancePtr, upgradeAddr);
 
     doMultiBoot(0);
-    return PRET_OK;
+    return PRET_NORES;
 }
 
 static PRET doUpgradeAbort(A_Package *p, A_Package *res)
@@ -512,11 +513,13 @@ static PRET doGetVersion(A_Package *p, A_Package *res)
 {
     int offset = 0;
     axu_package_init(res, p, ACMD_BP_RES_ACK);
-    axu_set_data(res, offset, &gHWVersion, 1);
+    axu_set_data(res, offset, &gVersion.H, 1);
     offset += 1;
-    axu_set_data(res, offset, &gBFVersion, 1);
+    axu_set_data(res, offset, &gVersion.M, 1);
     offset += 1;
-    axu_set_data(res, offset, &gAXUVersion, 1);
+    axu_set_data(res, offset, &gVersion.F, 1);
+    offset += 1;
+    axu_set_data(res, offset, &gVersion.D, 1);
     offset += 1;
     axu_finish_package(res);
     xil_printf("do: %s\r\n", __FUNCTION__);
@@ -552,17 +555,17 @@ static PRET doGetBoeMAC(A_Package *p, A_Package *res)
 	make_response_mac(p, ACMD_BP_RES_ACK,res);
     return PRET_OK;
 }
-
+#if 0
 static PRET doGetHWVer(A_Package *p, A_Package *res)
 {
 	xil_printf("do: %s\r\n", __FUNCTION__);
-	make_response_version(p, ACMD_BP_RES_ACK, gHWVersion, res);
+	make_response_version(p, ACMD_BP_RES_ACK, gVersion.H, res);
     return PRET_OK;
 }
 static PRET doGetFWVer(A_Package *p, A_Package *res)
 {
 	xil_printf("do: %s\r\n", __FUNCTION__);
-	make_response_version(p, ACMD_BP_RES_ACK, gBFVersion, res);
+	make_response_version(p, ACMD_BP_RES_ACK, gVersion.F, res);
     return PRET_OK;
 }
 static PRET doGetAXUVer(A_Package *p, A_Package *res)
@@ -571,7 +574,7 @@ static PRET doGetAXUVer(A_Package *p, A_Package *res)
 	make_response_version(p, ACMD_BP_RES_ACK, gAXUVersion, res);
     return PRET_OK;
 }
-
+#endif
 static PRET doSetBoeSN(A_Package *p, A_Package *res)
 {
 	char *errmsg = NULL;
@@ -844,18 +847,21 @@ Processor gCmdProcess[ACMD_END] = {
 	    [ACMD_PB_RESET] 			= {ACMD_PB_RESET, NULL, doReset},
 	    [ACMD_PB_GET_RANDOM] 		= {ACMD_PB_GET_RANDOM, NULL, doGetRandom},
 	    [ACMD_PB_GET_SN] 		= {ACMD_PB_GET_SN, NULL, doGetBoeSN},
+#if 0 // not used.
 	    [ACMD_PB_GET_HW_VER] 		= {ACMD_PB_GET_HW_VER, NULL, doGetHWVer},
 	    [ACMD_PB_GET_FW_VER] 		= {ACMD_PB_GET_FW_VER, NULL, doGetFWVer},
 	    [ACMD_PB_GET_AXU_VER] 		= {ACMD_PB_GET_AXU_VER, NULL, doGetAXUVer},
+#endif
 	    [ACMD_PB_SET_SN] 		= {ACMD_PB_SET_SN, NULL, doSetBoeSN},
 
 		[ACMD_PB_BIND_ACCOUNT] 		= {ACMD_PB_BIND_ACCOUNT, NULL, doBindAccount},
 		[ACMD_PB_GET_ACCOUNT] 		= {ACMD_PB_GET_ACCOUNT, NULL, doGetBindAccount},
 		[ACMD_PB_HW_SIGN] 			= {ACMD_PB_HW_SIGN, NULL, doHWSign},
-//		[ACMD_PB_CHECK_BIND] 		= {ACMD_PB_CHECK_BIND, NULL, doCheckBind},
-//		[ACMD_PB_BIND_ID] 			= {ACMD_PB_BIND_ID, NULL, doBindID},
-//		[ACMD_PB_UNBIND] 			= {ACMD_PB_UNBIND, NULL, doUnBind},
-
+#if 0 // not used.
+		[ACMD_PB_CHECK_BIND] 		= {ACMD_PB_CHECK_BIND, NULL, doCheckBind},
+		[ACMD_PB_BIND_ID] 			= {ACMD_PB_BIND_ID, NULL, doBindID},
+		[ACMD_PB_UNBIND] 			= {ACMD_PB_UNBIND, NULL, doUnBind},
+#endif
 		[ACMD_PB_GENKEY]			= {ACMD_PB_GENKEY, NULL, doGenKey},
 		[ACMD_PB_GET_PUBKEY]		= {ACMD_PB_GET_PUBKEY, NULL, doGetPubkey},
 		[ACMD_PB_LOCK_PRIKEY]		= {ACMD_PB_LOCK_PRIKEY, NULL, doLockPk},

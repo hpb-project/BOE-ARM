@@ -169,26 +169,7 @@ void test_env(void)
 		printf("env init failed.\n");
 		return;
 	}
-	for(int i = 0 ; i < 1000; i++){
-		status = env_get(&env);
-		if(status != XST_SUCCESS){
-			printf("%d, env get failed\n", i);
-			return;
-		}
-		if(i != 0){
-			printf("get boeid = %d.\n", env.boeid);
-			if(env.boeid != i){
-				printf("get boeid failed, id=%d,should = %d.\n", env.boeid, i);
-				return;
-			}
-		}
-		env.boeid = i+1;
-		status = env_update(&env);
-		if(status != XST_SUCCESS){
-			printf("%d, env update failed\n", i);
-			return;
-		}
-	}
+
 	printf("env test success.\r\n");
 	return;
 }

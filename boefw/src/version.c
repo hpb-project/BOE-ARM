@@ -7,6 +7,9 @@
 
 #include "version.h"
 
-u8 gHWVersion = 0x10;
-u8 gBFVersion = 0x20;
-u8 gAXUVersion = 0x30;
+TVersion gVersion = {
+		.H = 0x11,
+		.M = 0,
+		.F = 0,
+		.D = 0
+};

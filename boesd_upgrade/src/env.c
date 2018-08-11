@@ -13,7 +13,7 @@
 
 #define START_MAGIC (0xA8)
 #define END_MAGIC	(0xC5)
-#define UNKNOWN_FLASH_SECTOR_SIZE (0x10000)  // 64KB
+#define UNKNOWN_FLASH_SECTOR_SIZE (0x20000)  // 64KB
 #define UNKNOWN_FLASH_SECTOR_MASK (0xFFFF0000)
 
 
@@ -69,7 +69,7 @@ static int findValidEnv(EnvHandle *handle, u32 sAddress, EnvContent *genv)
     }while(sAddress < handle->end_addr);
 
     if (lastAddr != 0) {
-        printf("find valid env find, at 0x%x, env.boeid = %d.\r\n", lastAddr, lastEnv.boeid);
+        printf("find valid env find, at 0x%x, env.seq_id = %ld.\r\n", lastAddr, lastEnv.seq_id);
         handle->current_addr = lastAddr;
         memcpy(genv, &lastEnv, sizeof(EnvContent));
         return XST_SUCCESS;
@@ -161,6 +161,7 @@ int env_init(void)
             xil_printf("Get flashinfo failed.\r\n");
             gHandle.flash_sector_size = UNKNOWN_FLASH_SECTOR_SIZE;
             gHandle.flash_sector_mask = UNKNOWN_FLASH_SECTOR_MASK;
+            return XST_FAILURE;
         }else{
             gHandle.flash_sector_size = fi.SectSize;
             gHandle.flash_sector_mask = fi.SectMask;

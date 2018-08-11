@@ -841,13 +841,13 @@ static int WriteToPage(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *Wri
 int FlashWrite(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount, u8 *WriteBfrPtr)
 {
 	int wlen = 0;
-	xil_printf("Total len = %d.\r\n", ByteCount);
+	xil_printf("Flash Write %x, Total len = %d.\r\n", Address, ByteCount);
 	do{
 		wlen = WriteToPage(QspiPsuPtr, Address, ByteCount, WriteBfrPtr);
 		Address += wlen;
 		ByteCount -= wlen;
 		WriteBfrPtr += wlen;
-		xil_printf("write len = %d.\r\n", wlen);
+		//xil_printf("write len = %d.\r\n", wlen);
 	}while(ByteCount > 0);
 
 	return 0;
@@ -882,6 +882,7 @@ int FlashErase(XQspiPsu *QspiPsuPtr, u32 Address, u32 ByteCount,
 	int Status;
 
 	WriteEnableCmd = WRITE_ENABLE_CMD;
+	xil_printf("flash erase addr %x, len = %x\r\n", Address, ByteCount);
 	/*
 	 * If erase size is same as the total size of the flash, use bulk erase
 	 * command or die erase command multiple times as required

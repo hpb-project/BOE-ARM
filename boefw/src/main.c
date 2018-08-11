@@ -200,8 +200,10 @@ int main()
     int status = 0;
     init_platform();
 #if 0 // test flash
+    xil_printf("hello  dffdjslfds\r\n");
     extern void runtest(void);
     runtest();
+    GoMultiBoot(0);
     return 0;
 #endif
 
@@ -244,7 +246,7 @@ int main()
         env_update(&gHandle.gEnv);
     }
 
-    xil_printf("Welcome to HPB, SWVer = 0x%02x.\r\n", gAXUVersion);
+    xil_printf("Welcome to HPB, Version = %d.%d.%d.%d\r\n", vMajor(gVersion.H), gVersion.M, gVersion.F, gVersion.D);
     atimer_register_timer(led_running, 300, NULL);
     // 3. enter mainloop.
     mainloop();
