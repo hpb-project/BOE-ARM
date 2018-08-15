@@ -27,6 +27,7 @@
 #include "flash_map.h"
 #include "flash_oper.h"
 #include "env.h"
+#include "emac_init.h"
 
 static int doMultiBoot()
 {
@@ -66,6 +67,7 @@ int main()
 
     init_platform();
     xil_printf("This is golden image.\r\n");
+    emac_init();
 #if 0
     while(1)
     {

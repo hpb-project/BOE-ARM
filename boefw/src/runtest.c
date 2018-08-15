@@ -132,7 +132,7 @@ extern void runtest(void)
 {
     //test_flash();
     //at508_test();
-    test_led();
+    //test_led();
     //test_env();
 }
 

@@ -57,6 +57,7 @@
 #include "flash_oper.h"
 #include "version.h"
 #include "atimer.h"
+#include "emac_init.h"
 #include "at508.h"
 #include "led.h"
 #include <time.h>
@@ -203,11 +204,15 @@ int main()
     xil_printf("hello  dffdjslfds\r\n");
     extern void runtest(void);
     runtest();
-    GoMultiBoot(0);
+    //GoMultiBoot(0);
     return 0;
 #endif
 
     // 1. some init.
+
+    // init emac led status.
+    emac_init();
+
     status = env_init();
     if(status != XST_SUCCESS){
         xil_printf("Env init failed.\n\r");

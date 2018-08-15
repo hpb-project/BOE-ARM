@@ -12,6 +12,7 @@
 #include "flash_oper.h"
 #include "env.h"
 #include "sd.h"
+#include "emac_init.h"
 #include "JSON.h"
 #include "led.h"
 
@@ -310,6 +311,8 @@ int init(Handle *handle)
 	int status = 0;
 
 	memset(handle, 0x0, sizeof(Handle));
+	emac_init();
+
 	//1. init flash and env.
 	status = env_init();
 	if(status != XST_SUCCESS){
