@@ -19,6 +19,7 @@
 #include "flash_map.h"
 #include "led.h"
 #include "env.h"
+#include "emac_oper.h"
 static u8 CmdBfr[8];
 
 void test_flash(void)
@@ -128,11 +129,30 @@ void test_led()
 	}
 }
 
+void test_emac()
+{
+
+	u16 val = 0;
+	emac_init();
+
+	emac_reg_read(0x2, &val);
+	xil_printf("phy [0x%02x] = 0x%02x\r\n", 0x02, val);
+	emac_reg_read(0x3, &val);
+	xil_printf("phy [0x%02x] = 0x%02x\r\n", 0x03, val);
+	while(1){
+		sleep(1);
+		emac_shadow_reg_read(0x1c, 0x1F, &val);
+		xil_printf("phy [0x%02x], shadow = 0x%02x, val = 0x%02x\r\n", 0x1c, 0x1f, val);
+	}
+}
+
 extern void runtest(void)
 {
     //test_flash();
     //at508_test();
     //test_led();
     //test_env();
+	test_emac();
+
 }
 

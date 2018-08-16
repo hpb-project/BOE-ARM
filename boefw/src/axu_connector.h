@@ -64,6 +64,8 @@ typedef enum A_Error{
 	A_GETPUBKEY_ERROR,
 	A_LOCK_PK_ERROR,
 	A_HWVERIFY_ERROR,
+	A_PHY_READ_ERROR,
+	A_PHY_WRITE_ERROR,
     A_ERROR_END,
 }A_Error;
 const char *gAErrorMsg[A_ERROR_END];
@@ -99,6 +101,9 @@ typedef enum A_CMD {
 
 	ACMD_PB_SET_MAC		= 0x18,
 	ACMD_PB_GET_MAC		= 0x19,
+	ACMD_PB_PHY_READ		= 0x20, // only for PL phy (0x1E)
+	ACMD_PB_PHY_SHD_READ		= 0x21, // shadow register read
+	ACMD_PB_PHY_SHD_WRITE		= 0x22, // shadow register write
 
 
 

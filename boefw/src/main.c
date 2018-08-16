@@ -57,10 +57,10 @@
 #include "flash_oper.h"
 #include "version.h"
 #include "atimer.h"
-#include "emac_init.h"
 #include "at508.h"
 #include "led.h"
 #include <time.h>
+#include "emac_oper.h"
 
 /*
  * Firmware main work

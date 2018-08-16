@@ -17,6 +17,7 @@ XEmacPs EmacPsInstance;
 
 #define PHY_ID_MARVELL	0x141
 #define PHY_ID_TI		0x2000
+static u32 gPLPhyaddr = 0x1E;
 u32 XEmacPsDetectPHY(XEmacPs * EmacPsInstancePtr)
 {
 	u32 PhyAddr;
@@ -58,4 +59,31 @@ int emac_init(void)
 	}
 	XEmacPsDetectPHY(&EmacPsInstance);
 	return XST_SUCCESS;
+}
+
+int emac_reg_read(u32 RegisterNum, u16 *PhyDataPtr)
+{
+	u32 Status;
+	Status = XEmacPs_PhyRead(&EmacPsInstance, gPLPhyaddr,
+			RegisterNum, PhyDataPtr);
+	return Status;
+}
+
+#define BCM54XX_SHD_WRITE (0x8000)
+#define BCM54XX_SHD_VAL(x) ((x & 0x1f) << 10)
+#define BCM54XX_SHD_DATA(x) ((x & 0x3ff) << 0)
+int emac_shadow_reg_read(u32 RegisterNum, u16 shadow, u16 *PhyDataPtr)
+{
+	u16 regVal = 0;
+	u32 Status;
+	Status = XEmacPs_PhyWrite(&EmacPsInstance, gPLPhyaddr, RegisterNum, BCM54XX_SHD_VAL(shadow));
+	Status |= XEmacPs_PhyRead(&EmacPsInstance, gPLPhyaddr, RegisterNum, &regVal);
+	*PhyDataPtr = BCM54XX_SHD_DATA(regVal);
+	return Status;
+}
+int emac_shadow_reg_write(u32 RegisterNum, u16 shadow, u16 val)
+{
+	u32 Status;
+	Status = XEmacPs_PhyWrite(&EmacPsInstance, gPLPhyaddr, RegisterNum, BCM54XX_SHD_WRITE | BCM54XX_SHD_VAL(shadow) | BCM54XX_SHD_DATA(val));
+	return Status;
 }

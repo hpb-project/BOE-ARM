@@ -13,6 +13,7 @@
 #include "doCommand.h"
 #include "atimer.h"
 #include "at508.h"
+#include "emac_oper.h"
 static u8 gEmpty256[32] = {0};
 static u8 CmdBfr[8];
 
@@ -92,6 +93,14 @@ static int make_response_mac(A_Package *req, ACmd cmd, A_Package *p)
 {
     axu_package_init(p, req, cmd);
     axu_set_data(p, 0, gHandle.gEnv.board_mac, sizeof(gHandle.gEnv.board_mac));
+    axu_finish_package(p);
+    return 0;
+}
+
+static int make_response_phy_read(A_Package *req, ACmd cmd, u16 val, A_Package *p)
+{
+    axu_package_init(p, req, cmd);
+    axu_set_data(p, 0, (u8*)&val, sizeof(val));
     axu_finish_package(p);
     return 0;
 }
@@ -555,6 +564,58 @@ static PRET doGetBoeMAC(A_Package *p, A_Package *res)
 	make_response_mac(p, ACMD_BP_RES_ACK,res);
     return PRET_OK;
 }
+
+static PRET doReadPhyReg(A_Package *p, A_Package *res)
+{
+	xil_printf("do: %s\r\n", __FUNCTION__);
+	char *errmsg = NULL;
+	u32 reg = *(u32*)(p->data);
+	u16 val = 0;
+	if(XST_SUCCESS == emac_reg_read(reg, &val)){
+		make_response_phy_read(p, ACMD_BP_RES_ACK, val, res);
+	}else{
+		errmsg = axu_get_error_msg(A_PHY_READ_ERROR);
+		make_response_error(p, ACMD_BP_RES_ERR, A_PHY_READ_ERROR, errmsg, strlen(errmsg), res);
+	}
+
+    return PRET_OK;
+}
+
+static PRET doReadPhyShdReg(A_Package *p, A_Package *res)
+{
+	xil_printf("do: %s\r\n", __FUNCTION__);
+	char *errmsg = NULL;
+	u32 reg = *(u32*)(p->data);
+	u16 shadow = *(u16*)(p->data+4);
+	u16 val = 0;
+	if(XST_SUCCESS == emac_shadow_reg_read(reg, shadow, &val)){
+		xil_printf("phy shd read [0x%x][0x%02x] = [0x%02x]\r\n", reg, shadow, val);
+		make_response_phy_read(p, ACMD_BP_RES_ACK, val, res);
+	}else{
+		errmsg = axu_get_error_msg(A_PHY_READ_ERROR);
+		make_response_error(p, ACMD_BP_RES_ERR, A_PHY_READ_ERROR, errmsg, strlen(errmsg), res);
+	}
+
+    return PRET_OK;
+}
+
+static PRET doWritePhyShdReg(A_Package *p, A_Package *res)
+{
+	xil_printf("do: %s\r\n", __FUNCTION__);
+	char *errmsg = NULL;
+	u32 reg = *(u32*)(p->data);
+	u16 shadow = *(u16*)(p->data+4);
+	u16 val = *(u16*)(p->data+4+2);
+	if(XST_SUCCESS == emac_shadow_reg_write(reg, shadow, val)){
+		make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
+	}else{
+		errmsg = axu_get_error_msg(A_PHY_WRITE_ERROR);
+		make_response_error(p, ACMD_BP_RES_ERR, A_PHY_WRITE_ERROR, errmsg, strlen(errmsg), res);
+	}
+
+    return PRET_OK;
+}
+
 #if 0
 static PRET doGetHWVer(A_Package *p, A_Package *res)
 {
@@ -868,6 +929,9 @@ Processor gCmdProcess[ACMD_END] = {
 		[ACMD_PB_VERIFY]		= {ACMD_PB_VERIFY, NULL, doHWVerify},
 		[ACMD_PB_SET_MAC]		= {ACMD_PB_SET_MAC, NULL, doSetBoeMAC},
 		[ACMD_PB_GET_MAC]		= {ACMD_PB_GET_MAC, NULL, doGetBoeMAC},
+		[ACMD_PB_PHY_READ]		= {ACMD_PB_PHY_READ, NULL, doReadPhyReg},
+		[ACMD_PB_PHY_SHD_READ]		= {ACMD_PB_PHY_SHD_READ, NULL, doReadPhyShdReg},
+		[ACMD_PB_PHY_SHD_WRITE]		= {ACMD_PB_PHY_SHD_WRITE, NULL, doWritePhyShdReg},
 
 };
 

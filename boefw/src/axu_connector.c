@@ -108,6 +108,8 @@ const char *gErrMsg[] = {
 		"get pubkey err",
 		"lock pk err",
 		"hw verify err",
+		"phy read err",
+		"phy write err",
 		NULL,
 };
 char *axu_get_error_msg(A_Error ecode)
