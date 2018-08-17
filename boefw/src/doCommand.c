@@ -105,6 +105,14 @@ static int make_response_phy_read(A_Package *req, ACmd cmd, u16 val, A_Package *
     return 0;
 }
 
+static int make_response_reg_read(A_Package *req, ACmd cmd, u32 val, A_Package *p)
+{
+    axu_package_init(p, req, cmd);
+    axu_set_data(p, 0, (u8*)&val, sizeof(val));
+    axu_finish_package(p);
+    return 0;
+}
+
 
 int make_response_error(A_Package *req, ACmd cmd, u8 err_code, char*err_info, int len, A_Package *p)
 {
@@ -616,6 +624,29 @@ static PRET doWritePhyShdReg(A_Package *p, A_Package *res)
     return PRET_OK;
 }
 
+static PRET doWriteReg(A_Package *p, A_Package *res)
+{
+	xil_printf("do: %s\r\n", __FUNCTION__);
+	u32 reg = *(u32*)(p->data);
+	u32 val = *(u32*)(p->data+4);
+	Xil_Out32(reg, val);
+	make_response_ack(p, ACMD_BP_RES_ACK, 1, res);
+
+    return PRET_OK;
+}
+
+static PRET doReadReg(A_Package *p, A_Package *res)
+{
+	xil_printf("do: %s\r\n", __FUNCTION__);
+
+	u32 reg = *(u32*)(p->data);
+	u32 val = 0;
+	val = Xil_In32(reg);
+	make_response_reg_read(p, ACMD_BP_RES_ACK, val, res);
+
+    return PRET_OK;
+}
+
 #if 0
 static PRET doGetHWVer(A_Package *p, A_Package *res)
 {
@@ -932,6 +963,8 @@ Processor gCmdProcess[ACMD_END] = {
 		[ACMD_PB_PHY_READ]		= {ACMD_PB_PHY_READ, NULL, doReadPhyReg},
 		[ACMD_PB_PHY_SHD_READ]		= {ACMD_PB_PHY_SHD_READ, NULL, doReadPhyShdReg},
 		[ACMD_PB_PHY_SHD_WRITE]		= {ACMD_PB_PHY_SHD_WRITE, NULL, doWritePhyShdReg},
+		[ACMD_PB_REG_WRITE]		= {ACMD_PB_REG_WRITE, NULL, doWriteReg},
+		[ACMD_PB_REG_READ]		= {ACMD_PB_REG_READ, NULL, doReadReg},
 
 };
 

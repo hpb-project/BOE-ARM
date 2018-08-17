@@ -196,6 +196,14 @@ int led_running(void *data)
 	return 1;
 }
 
+int heart(void *data)
+{
+	static int heart_time = 0;
+
+
+	return 1;
+}
+
 int main()
 {
     int status = 0;
@@ -253,6 +261,7 @@ int main()
 
     xil_printf("Welcome to HPB, Version = %d.%d.%d.%d\r\n", vMajor(gVersion.H), gVersion.M, gVersion.F, gVersion.D);
     atimer_register_timer(led_running, 300, NULL);
+    atimer_register_timer(heart, 30000, NULL);
     // 3. enter mainloop.
     mainloop();
 
