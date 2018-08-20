@@ -58,9 +58,13 @@
 #include "version.h"
 #include "atimer.h"
 #include "at508.h"
-#include "led.h"
 #include <time.h>
+
 #include "emac_oper.h"
+#include "led.h"
+#include "watchdog.h"
+
+
 
 /*
  * Firmware main work
@@ -80,7 +84,6 @@
  */
 
 extern GlobalHandle gHandle;
-
 
 /*
  * return value: 0: correct data.
@@ -182,7 +185,6 @@ int led_failed()
 		usleep(200000);
 	}
 }
-// timer function ,50ms
 int led_running(void *data)
 {
 	static int timecnt = 0;
@@ -204,6 +206,7 @@ int heart(void *data)
 	return 1;
 }
 
+
 int main()
 {
     int status = 0;
@@ -219,7 +222,8 @@ int main()
     // 1. some init.
 
     // init emac led status.
-    emac_init();
+    //emac_init(); // remove by luxq at 2018-8-20.
+    emac_reset();
 
     status = env_init();
     if(status != XST_SUCCESS){
@@ -230,6 +234,11 @@ int main()
     if(status != XST_SUCCESS){
 		xil_printf("timer init failed.\n\r");
 		goto failed;
+	}
+    status = watch_dog_init();
+    if(status != XST_SUCCESS){
+		xil_printf("watch dog init failed.\n\r");
+		//goto failed;
 	}
     status = ledInit();
     status = at508_init();
@@ -259,9 +268,12 @@ int main()
         env_update(&gHandle.gEnv);
     }
 
+
     xil_printf("Welcome to HPB, Version = %d.%d.%d.%d\r\n", vMajor(gVersion.H), gVersion.M, gVersion.F, gVersion.D);
     atimer_register_timer(led_running, 300, NULL);
     atimer_register_timer(heart, 30000, NULL);
+
+
     // 3. enter mainloop.
     mainloop();
 

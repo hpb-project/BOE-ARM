@@ -67,7 +67,7 @@ int main()
 
     init_platform();
     xil_printf("This is golden image.\r\n");
-    emac_init();
+
 #if 0
     while(1)
     {

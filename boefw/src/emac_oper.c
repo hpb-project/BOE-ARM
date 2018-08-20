@@ -7,7 +7,9 @@
 #include "xil_exception.h"
 #include "xil_cache.h"
 #include "xil_printf.h"
+#include "xgpiops.h"
 #include "xemacps.h"
+#include <sleep.h>
 
 #define EMACPS_DEVICE_ID	XPAR_XEMACPS_0_DEVICE_ID
 XEmacPs EmacPsInstance;
@@ -86,4 +88,29 @@ int emac_shadow_reg_write(u32 RegisterNum, u16 shadow, u16 val)
 	u32 Status;
 	Status = XEmacPs_PhyWrite(&EmacPsInstance, gPLPhyaddr, RegisterNum, BCM54XX_SHD_WRITE | BCM54XX_SHD_VAL(shadow) | BCM54XX_SHD_DATA(val));
 	return Status;
+}
+
+
+int emac_reset()
+{
+	XGpioPs emacGpio;
+	XGpioPs_Config *ConfigPtr;
+	int emacResetPin = 77;
+
+	/* Initialize the Gpio driver. */
+	ConfigPtr = XGpioPs_LookupConfig(XPAR_GPIO_0_DEVICE_ID);
+	if (ConfigPtr == NULL) {
+		return XST_FAILURE;
+	}
+	XGpioPs_CfgInitialize(&emacGpio, ConfigPtr, ConfigPtr->BaseAddr);
+
+
+	XGpioPs_SetDirectionPin(&emacGpio, emacResetPin, 1);
+	XGpioPs_SetOutputEnablePin(&emacGpio, emacResetPin, 1);
+
+	XGpioPs_WritePin(&emacGpio, emacResetPin, 0x0);
+	usleep(30000);
+	XGpioPs_WritePin(&emacGpio, emacResetPin, 0x1);
+
+	return XST_SUCCESS;
 }

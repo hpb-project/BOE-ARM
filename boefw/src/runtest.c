@@ -15,11 +15,12 @@
 #include "xqspipsu.h"
 #include "multiboot.h"
 #include "sleep.h"
+
 #include "flash_oper.h"
 #include "flash_map.h"
-#include "led.h"
 #include "env.h"
 #include "emac_oper.h"
+#include "led.h"
 static u8 CmdBfr[8];
 
 void test_flash(void)

@@ -12,4 +12,5 @@ int emac_init(void);
 int emac_reg_read(u32 RegisterNum, u16 *PhyDataPtr);
 int emac_shadow_reg_read(u32 RegisterNum, u16 shadow, u16 *PhyDataPtr);
 int emac_shadow_reg_write(u32 RegisterNum, u16 shadow, u16 val);
+int emac_reset();
 #endif /* SRC_EMAC_OPER_H_ */

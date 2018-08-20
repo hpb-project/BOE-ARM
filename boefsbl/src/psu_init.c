@@ -12123,6 +12123,384 @@ unsigned long psu_mio_init_data(void)
 /*##################################################################### */
 
     /*
+    * Register : MIO_PIN_52 @ 0XFF1800D0
+
+    * Level 0 Mux Select 0= Level 1 Mux Output 1= gem2, Output, gem2_rgmii_tx_
+    * clk- (TX RGMII clock)
+    *  PSU_IOU_SLCR_MIO_PIN_52_L0_SEL                              0
+
+    * Level 1 Mux Select 0= Level 2 Mux Output 1= usb0, Input, usb0_ulpi_clk_i
+    * n- (ULPI Clock)
+    *  PSU_IOU_SLCR_MIO_PIN_52_L1_SEL                              0
+
+    * Level 2 Mux Select 0= Level 3 Mux Output 1= Not Used 2= Not Used 3= Not
+    * Used
+    *  PSU_IOU_SLCR_MIO_PIN_52_L2_SEL                              0
+
+    * Level 3 Mux Select 0= gpio2, Input, gpio_2_pin_in[0]- (GPIO bank 2) 0= g
+    * pio2, Output, gpio_2_pin_out[0]- (GPIO bank 2) 1= can1, Output, can1_phy
+    * _tx- (Can TX signal) 2= i2c1, Input, i2c1_scl_input- (SCL signal) 2= i2c
+    * 1, Output, i2c1_scl_out- (SCL signal) 3= pjtag, Input, pjtag_tck- (PJTAG
+    *  TCK) 4= spi0, Input, spi0_sclk_in- (SPI Clock) 4= spi0, Output, spi0_sc
+    * lk_out- (SPI Clock) 5= ttc1, Input, ttc1_clk_in- (TTC Clock) 6= ua1, Out
+    * put, ua1_txd- (UART transmitter serial output) 7= trace, Output, trace_c
+    * lk- (Trace Port Clock)
+    *  PSU_IOU_SLCR_MIO_PIN_52_L3_SEL                              0
+
+    * Configures MIO Pin 52 peripheral interface mapping
+    * (OFFSET, MASK, VALUE)      (0XFF1800D0, 0x000000FEU ,0x00000000U)
+    */
+	PSU_Mask_Write(IOU_SLCR_MIO_PIN_52_OFFSET, 0x000000FEU, 0x00000000U);
+/*##################################################################### */
+
+    /*
+    * Register : MIO_PIN_53 @ 0XFF1800D4
+
+    * Level 0 Mux Select 0= Level 1 Mux Output 1= gem2, Output, gem2_rgmii_txd
+    * [0]- (TX RGMII data)
+    *  PSU_IOU_SLCR_MIO_PIN_53_L0_SEL                              0
+
+    * Level 1 Mux Select 0= Level 2 Mux Output 1= usb0, Input, usb0_ulpi_dir-
+    * (Data bus direction control)
+    *  PSU_IOU_SLCR_MIO_PIN_53_L1_SEL                              0
+
+    * Level 2 Mux Select 0= Level 3 Mux Output 1= Not Used 2= Not Used 3= Not
+    * Used
+    *  PSU_IOU_SLCR_MIO_PIN_53_L2_SEL                              0
+
+    * Level 3 Mux Select 0= gpio2, Input, gpio_2_pin_in[1]- (GPIO bank 2) 0= g
+    * pio2, Output, gpio_2_pin_out[1]- (GPIO bank 2) 1= can1, Input, can1_phy_
+    * rx- (Can RX signal) 2= i2c1, Input, i2c1_sda_input- (SDA signal) 2= i2c1
+    * , Output, i2c1_sda_out- (SDA signal) 3= pjtag, Input, pjtag_tdi- (PJTAG
+    * TDI) 4= spi0, Output, spi0_n_ss_out[2]- (SPI Master Selects) 5= ttc1, Ou
+    * tput, ttc1_wave_out- (TTC Waveform Clock) 6= ua1, Input, ua1_rxd- (UART
+    * receiver serial input) 7= trace, Output, trace_ctl- (Trace Port Control
+    * Signal)
+    *  PSU_IOU_SLCR_MIO_PIN_53_L3_SEL                              0
+
+    * Configures MIO Pin 53 peripheral interface mapping
+    * (OFFSET, MASK, VALUE)      (0XFF1800D4, 0x000000FEU ,0x00000000U)
+    */
+	PSU_Mask_Write(IOU_SLCR_MIO_PIN_53_OFFSET, 0x000000FEU, 0x00000000U);
+/*##################################################################### */
+
+    /*
+    * Register : MIO_PIN_54 @ 0XFF1800D8
+
+    * Level 0 Mux Select 0= Level 1 Mux Output 1= gem2, Output, gem2_rgmii_txd
+    * [1]- (TX RGMII data)
+    *  PSU_IOU_SLCR_MIO_PIN_54_L0_SEL                              0
+
+    * Level 1 Mux Select 0= Level 2 Mux Output 1= usb0, Input, usb0_ulpi_rx_da
+    * ta[2]- (ULPI data bus) 1= usb0, Output, usb0_ulpi_tx_data[2]- (ULPI data
+    *  bus)
+    *  PSU_IOU_SLCR_MIO_PIN_54_L1_SEL                              0
+
+    * Level 2 Mux Select 0= Level 3 Mux Output 1= Not Used 2= Not Used 3= Not
+    * Used
+    *  PSU_IOU_SLCR_MIO_PIN_54_L2_SEL                              0
+
+    * Level 3 Mux Select 0= gpio2, Input, gpio_2_pin_in[2]- (GPIO bank 2) 0= g
+    * pio2, Output, gpio_2_pin_out[2]- (GPIO bank 2) 1= can0, Input, can0_phy_
+    * rx- (Can RX signal) 2= i2c0, Input, i2c0_scl_input- (SCL signal) 2= i2c0
+    * , Output, i2c0_scl_out- (SCL signal) 3= pjtag, Output, pjtag_tdo- (PJTAG
+    *  TDO) 4= spi0, Output, spi0_n_ss_out[1]- (SPI Master Selects) 5= ttc0, I
+    * nput, ttc0_clk_in- (TTC Clock) 6= ua0, Input, ua0_rxd- (UART receiver se
+    * rial input) 7= trace, Output, tracedq[0]- (Trace Port Databus)
+    *  PSU_IOU_SLCR_MIO_PIN_54_L3_SEL                              0
+
+    * Configures MIO Pin 54 peripheral interface mapping
+    * (OFFSET, MASK, VALUE)      (0XFF1800D8, 0x000000FEU ,0x00000000U)
+    */
+	PSU_Mask_Write(IOU_SLCR_MIO_PIN_54_OFFSET, 0x000000FEU, 0x00000000U);
+/*##################################################################### */
+
+    /*
+    * Register : MIO_PIN_55 @ 0XFF1800DC
+
+    * Level 0 Mux Select 0= Level 1 Mux Output 1= gem2, Output, gem2_rgmii_txd
+    * [2]- (TX RGMII data)
+    *  PSU_IOU_SLCR_MIO_PIN_55_L0_SEL                              0
+
+    * Level 1 Mux Select 0= Level 2 Mux Output 1= usb0, Input, usb0_ulpi_nxt-
+    * (Data flow control signal from the PHY)
+    *  PSU_IOU_SLCR_MIO_PIN_55_L1_SEL                              0
+
+    * Level 2 Mux Select 0= Level 3 Mux Output 1= Not Used 2= Not Used 3= Not
+    * Used
+    *  PSU_IOU_SLCR_MIO_PIN_55_L2_SEL                              0
+
+    * Level 3 Mux Select 0= gpio2, Input, gpio_2_pin_in[3]- (GPIO bank 2) 0= g
+    * pio2, Output, gpio_2_pin_out[3]- (GPIO bank 2) 1= can0, Output, can0_phy
+    * _tx- (Can TX signal) 2= i2c0, Input, i2c0_sda_input- (SDA signal) 2= i2c
+    * 0, Output, i2c0_sda_out- (SDA signal) 3= pjtag, Input, pjtag_tms- (PJTAG
+    *  TMS) 4= spi0, Input, spi0_n_ss_in- (SPI Master Selects) 4= spi0, Output
+    * , spi0_n_ss_out[0]- (SPI Master Selects) 5= ttc0, Output, ttc0_wave_out-
+    *  (TTC Waveform Clock) 6= ua0, Output, ua0_txd- (UART transmitter serial
+    * output) 7= trace, Output, tracedq[1]- (Trace Port Databus)
+    *  PSU_IOU_SLCR_MIO_PIN_55_L3_SEL                              0
+
+    * Configures MIO Pin 55 peripheral interface mapping
+    * (OFFSET, MASK, VALUE)      (0XFF1800DC, 0x000000FEU ,0x00000000U)
+    */
+	PSU_Mask_Write(IOU_SLCR_MIO_PIN_55_OFFSET, 0x000000FEU, 0x00000000U);
+/*##################################################################### */
+
+    /*
+    * Register : MIO_PIN_56 @ 0XFF1800E0
+
+    * Level 0 Mux Select 0= Level 1 Mux Output 1= gem2, Output, gem2_rgmii_txd
+    * [3]- (TX RGMII data)
+    *  PSU_IOU_SLCR_MIO_PIN_56_L0_SEL                              0
+
+    * Level 1 Mux Select 0= Level 2 Mux Output 1= usb0, Input, usb0_ulpi_rx_da
+    * ta[0]- (ULPI data bus) 1= usb0, Output, usb0_ulpi_tx_data[0]- (ULPI data
+    *  bus)
+    *  PSU_IOU_SLCR_MIO_PIN_56_L1_SEL                              0
+
+    * Level 2 Mux Select 0= Level 3 Mux Output 1= Not Used 2= Not Used 3= Not
+    * Used
+    *  PSU_IOU_SLCR_MIO_PIN_56_L2_SEL                              0
+
+    * Level 3 Mux Select 0= gpio2, Input, gpio_2_pin_in[4]- (GPIO bank 2) 0= g
+    * pio2, Output, gpio_2_pin_out[4]- (GPIO bank 2) 1= can1, Output, can1_phy
+    * _tx- (Can TX signal) 2= i2c1, Input, i2c1_scl_input- (SCL signal) 2= i2c
+    * 1, Output, i2c1_scl_out- (SCL signal) 3= swdt1, Input, swdt1_clk_in- (Wa
+    * tch Dog Timer Input clock) 4= spi0, Input, spi0_mi- (MISO signal) 4= spi
+    * 0, Output, spi0_so- (MISO signal) 5= ttc3, Input, ttc3_clk_in- (TTC Cloc
+    * k) 6= ua1, Output, ua1_txd- (UART transmitter serial output) 7= trace, O
+    * utput, tracedq[2]- (Trace Port Databus)
+    *  PSU_IOU_SLCR_MIO_PIN_56_L3_SEL                              0
+
+    * Configures MIO Pin 56 peripheral interface mapping
+    * (OFFSET, MASK, VALUE)      (0XFF1800E0, 0x000000FEU ,0x00000000U)
+    */
+	PSU_Mask_Write(IOU_SLCR_MIO_PIN_56_OFFSET, 0x000000FEU, 0x00000000U);
+/*##################################################################### */
+
+    /*
+    * Register : MIO_PIN_57 @ 0XFF1800E4
+
+    * Level 0 Mux Select 0= Level 1 Mux Output 1= gem2, Output, gem2_rgmii_tx_
+    * ctl- (TX RGMII control)
+    *  PSU_IOU_SLCR_MIO_PIN_57_L0_SEL                              0
+
+    * Level 1 Mux Select 0= Level 2 Mux Output 1= usb0, Input, usb0_ulpi_rx_da
+    * ta[1]- (ULPI data bus) 1= usb0, Output, usb0_ulpi_tx_data[1]- (ULPI data
+    *  bus)
+    *  PSU_IOU_SLCR_MIO_PIN_57_L1_SEL                              0
+
+    * Level 2 Mux Select 0= Level 3 Mux Output 1= Not Used 2= Not Used 3= Not
+    * Used
+    *  PSU_IOU_SLCR_MIO_PIN_57_L2_SEL                              0
+
+    * Level 3 Mux Select 0= gpio2, Input, gpio_2_pin_in[5]- (GPIO bank 2) 0= g
+    * pio2, Output, gpio_2_pin_out[5]- (GPIO bank 2) 1= can1, Input, can1_phy_
+    * rx- (Can RX signal) 2= i2c1, Input, i2c1_sda_input- (SDA signal) 2= i2c1
+    * , Output, i2c1_sda_out- (SDA signal) 3= swdt1, Output, swdt1_rst_out- (W
+    * atch Dog Timer Output clock) 4= spi0, Output, spi0_mo- (MOSI signal) 4=
+    * spi0, Input, spi0_si- (MOSI signal) 5= ttc3, Output, ttc3_wave_out- (TTC
+    *  Waveform Clock) 6= ua1, Input, ua1_rxd- (UART receiver serial input) 7=
+    *  trace, Output, tracedq[3]- (Trace Port Databus)
+    *  PSU_IOU_SLCR_MIO_PIN_57_L3_SEL                              0
+
+    * Configures MIO Pin 57 peripheral interface mapping
+    * (OFFSET, MASK, VALUE)      (0XFF1800E4, 0x000000FEU ,0x00000000U)
+    */
+	PSU_Mask_Write(IOU_SLCR_MIO_PIN_57_OFFSET, 0x000000FEU, 0x00000000U);
+/*##################################################################### */
+
+    /*
+    * Register : MIO_PIN_58 @ 0XFF1800E8
+
+    * Level 0 Mux Select 0= Level 1 Mux Output 1= gem2, Input, gem2_rgmii_rx_c
+    * lk- (RX RGMII clock)
+    *  PSU_IOU_SLCR_MIO_PIN_58_L0_SEL                              0
+
+    * Level 1 Mux Select 0= Level 2 Mux Output 1= usb0, Output, usb0_ulpi_stp-
+    *  (Asserted to end or interrupt transfers)
+    *  PSU_IOU_SLCR_MIO_PIN_58_L1_SEL                              0
+
+    * Level 2 Mux Select 0= Level 3 Mux Output 1= Not Used 2= Not Used 3= Not
+    * Used
+    *  PSU_IOU_SLCR_MIO_PIN_58_L2_SEL                              0
+
+    * Level 3 Mux Select 0= gpio2, Input, gpio_2_pin_in[6]- (GPIO bank 2) 0= g
+    * pio2, Output, gpio_2_pin_out[6]- (GPIO bank 2) 1= can0, Input, can0_phy_
+    * rx- (Can RX signal) 2= i2c0, Input, i2c0_scl_input- (SCL signal) 2= i2c0
+    * , Output, i2c0_scl_out- (SCL signal) 3= pjtag, Input, pjtag_tck- (PJTAG
+    * TCK) 4= spi1, Input, spi1_sclk_in- (SPI Clock) 4= spi1, Output, spi1_scl
+    * k_out- (SPI Clock) 5= ttc2, Input, ttc2_clk_in- (TTC Clock) 6= ua0, Inpu
+    * t, ua0_rxd- (UART receiver serial input) 7= trace, Output, tracedq[4]- (
+    * Trace Port Databus)
+    *  PSU_IOU_SLCR_MIO_PIN_58_L3_SEL                              0
+
+    * Configures MIO Pin 58 peripheral interface mapping
+    * (OFFSET, MASK, VALUE)      (0XFF1800E8, 0x000000FEU ,0x00000000U)
+    */
+	PSU_Mask_Write(IOU_SLCR_MIO_PIN_58_OFFSET, 0x000000FEU, 0x00000000U);
+/*##################################################################### */
+
+    /*
+    * Register : MIO_PIN_59 @ 0XFF1800EC
+
+    * Level 0 Mux Select 0= Level 1 Mux Output 1= gem2, Input, gem2_rgmii_rxd[
+    * 0]- (RX RGMII data)
+    *  PSU_IOU_SLCR_MIO_PIN_59_L0_SEL                              0
+
+    * Level 1 Mux Select 0= Level 2 Mux Output 1= usb0, Input, usb0_ulpi_rx_da
+    * ta[3]- (ULPI data bus) 1= usb0, Output, usb0_ulpi_tx_data[3]- (ULPI data
+    *  bus)
+    *  PSU_IOU_SLCR_MIO_PIN_59_L1_SEL                              0
+
+    * Level 2 Mux Select 0= Level 3 Mux Output 1= Not Used 2= Not Used 3= Not
+    * Used
+    *  PSU_IOU_SLCR_MIO_PIN_59_L2_SEL                              0
+
+    * Level 3 Mux Select 0= gpio2, Input, gpio_2_pin_in[7]- (GPIO bank 2) 0= g
+    * pio2, Output, gpio_2_pin_out[7]- (GPIO bank 2) 1= can0, Output, can0_phy
+    * _tx- (Can TX signal) 2= i2c0, Input, i2c0_sda_input- (SDA signal) 2= i2c
+    * 0, Output, i2c0_sda_out- (SDA signal) 3= pjtag, Input, pjtag_tdi- (PJTAG
+    *  TDI) 4= spi1, Output, spi1_n_ss_out[2]- (SPI Master Selects) 5= ttc2, O
+    * utput, ttc2_wave_out- (TTC Waveform Clock) 6= ua0, Output, ua0_txd- (UAR
+    * T transmitter serial output) 7= trace, Output, tracedq[5]- (Trace Port D
+    * atabus)
+    *  PSU_IOU_SLCR_MIO_PIN_59_L3_SEL                              0
+
+    * Configures MIO Pin 59 peripheral interface mapping
+    * (OFFSET, MASK, VALUE)      (0XFF1800EC, 0x000000FEU ,0x00000000U)
+    */
+	PSU_Mask_Write(IOU_SLCR_MIO_PIN_59_OFFSET, 0x000000FEU, 0x00000000U);
+/*##################################################################### */
+
+    /*
+    * Register : MIO_PIN_60 @ 0XFF1800F0
+
+    * Level 0 Mux Select 0= Level 1 Mux Output 1= gem2, Input, gem2_rgmii_rxd[
+    * 1]- (RX RGMII data)
+    *  PSU_IOU_SLCR_MIO_PIN_60_L0_SEL                              0
+
+    * Level 1 Mux Select 0= Level 2 Mux Output 1= usb0, Input, usb0_ulpi_rx_da
+    * ta[4]- (ULPI data bus) 1= usb0, Output, usb0_ulpi_tx_data[4]- (ULPI data
+    *  bus)
+    *  PSU_IOU_SLCR_MIO_PIN_60_L1_SEL                              0
+
+    * Level 2 Mux Select 0= Level 3 Mux Output 1= Not Used 2= Not Used 3= Not
+    * Used
+    *  PSU_IOU_SLCR_MIO_PIN_60_L2_SEL                              0
+
+    * Level 3 Mux Select 0= gpio2, Input, gpio_2_pin_in[8]- (GPIO bank 2) 0= g
+    * pio2, Output, gpio_2_pin_out[8]- (GPIO bank 2) 1= can1, Output, can1_phy
+    * _tx- (Can TX signal) 2= i2c1, Input, i2c1_scl_input- (SCL signal) 2= i2c
+    * 1, Output, i2c1_scl_out- (SCL signal) 3= pjtag, Output, pjtag_tdo- (PJTA
+    * G TDO) 4= spi1, Output, spi1_n_ss_out[1]- (SPI Master Selects) 5= ttc1,
+    * Input, ttc1_clk_in- (TTC Clock) 6= ua1, Output, ua1_txd- (UART transmitt
+    * er serial output) 7= trace, Output, tracedq[6]- (Trace Port Databus)
+    *  PSU_IOU_SLCR_MIO_PIN_60_L3_SEL                              0
+
+    * Configures MIO Pin 60 peripheral interface mapping
+    * (OFFSET, MASK, VALUE)      (0XFF1800F0, 0x000000FEU ,0x00000000U)
+    */
+	PSU_Mask_Write(IOU_SLCR_MIO_PIN_60_OFFSET, 0x000000FEU, 0x00000000U);
+/*##################################################################### */
+
+    /*
+    * Register : MIO_PIN_61 @ 0XFF1800F4
+
+    * Level 0 Mux Select 0= Level 1 Mux Output 1= gem2, Input, gem2_rgmii_rxd[
+    * 2]- (RX RGMII data)
+    *  PSU_IOU_SLCR_MIO_PIN_61_L0_SEL                              0
+
+    * Level 1 Mux Select 0= Level 2 Mux Output 1= usb0, Input, usb0_ulpi_rx_da
+    * ta[5]- (ULPI data bus) 1= usb0, Output, usb0_ulpi_tx_data[5]- (ULPI data
+    *  bus)
+    *  PSU_IOU_SLCR_MIO_PIN_61_L1_SEL                              0
+
+    * Level 2 Mux Select 0= Level 3 Mux Output 1= Not Used 2= Not Used 3= Not
+    * Used
+    *  PSU_IOU_SLCR_MIO_PIN_61_L2_SEL                              0
+
+    * Level 3 Mux Select 0= gpio2, Input, gpio_2_pin_in[9]- (GPIO bank 2) 0= g
+    * pio2, Output, gpio_2_pin_out[9]- (GPIO bank 2) 1= can1, Input, can1_phy_
+    * rx- (Can RX signal) 2= i2c1, Input, i2c1_sda_input- (SDA signal) 2= i2c1
+    * , Output, i2c1_sda_out- (SDA signal) 3= pjtag, Input, pjtag_tms- (PJTAG
+    * TMS) 4= spi1, Input, spi1_n_ss_in- (SPI Master Selects) 4= spi1, Output,
+    *  spi1_n_ss_out[0]- (SPI Master Selects) 5= ttc1, Output, ttc1_wave_out-
+    * (TTC Waveform Clock) 6= ua1, Input, ua1_rxd- (UART receiver serial input
+    * ) 7= trace, Output, tracedq[7]- (Trace Port Databus)
+    *  PSU_IOU_SLCR_MIO_PIN_61_L3_SEL                              0
+
+    * Configures MIO Pin 61 peripheral interface mapping
+    * (OFFSET, MASK, VALUE)      (0XFF1800F4, 0x000000FEU ,0x00000000U)
+    */
+	PSU_Mask_Write(IOU_SLCR_MIO_PIN_61_OFFSET, 0x000000FEU, 0x00000000U);
+/*##################################################################### */
+
+    /*
+    * Register : MIO_PIN_62 @ 0XFF1800F8
+
+    * Level 0 Mux Select 0= Level 1 Mux Output 1= gem2, Input, gem2_rgmii_rxd[
+    * 3]- (RX RGMII data)
+    *  PSU_IOU_SLCR_MIO_PIN_62_L0_SEL                              0
+
+    * Level 1 Mux Select 0= Level 2 Mux Output 1= usb0, Input, usb0_ulpi_rx_da
+    * ta[6]- (ULPI data bus) 1= usb0, Output, usb0_ulpi_tx_data[6]- (ULPI data
+    *  bus)
+    *  PSU_IOU_SLCR_MIO_PIN_62_L1_SEL                              0
+
+    * Level 2 Mux Select 0= Level 3 Mux Output 1= Not Used 2= Not Used 3= Not
+    * Used
+    *  PSU_IOU_SLCR_MIO_PIN_62_L2_SEL                              0
+
+    * Level 3 Mux Select 0= gpio2, Input, gpio_2_pin_in[10]- (GPIO bank 2) 0=
+    * gpio2, Output, gpio_2_pin_out[10]- (GPIO bank 2) 1= can0, Input, can0_ph
+    * y_rx- (Can RX signal) 2= i2c0, Input, i2c0_scl_input- (SCL signal) 2= i2
+    * c0, Output, i2c0_scl_out- (SCL signal) 3= swdt0, Input, swdt0_clk_in- (W
+    * atch Dog Timer Input clock) 4= spi1, Input, spi1_mi- (MISO signal) 4= sp
+    * i1, Output, spi1_so- (MISO signal) 5= ttc0, Input, ttc0_clk_in- (TTC Clo
+    * ck) 6= ua0, Input, ua0_rxd- (UART receiver serial input) 7= trace, Outpu
+    * t, tracedq[8]- (Trace Port Databus)
+    *  PSU_IOU_SLCR_MIO_PIN_62_L3_SEL                              0
+
+    * Configures MIO Pin 62 peripheral interface mapping
+    * (OFFSET, MASK, VALUE)      (0XFF1800F8, 0x000000FEU ,0x00000000U)
+    */
+	PSU_Mask_Write(IOU_SLCR_MIO_PIN_62_OFFSET, 0x000000FEU, 0x00000000U);
+/*##################################################################### */
+
+    /*
+    * Register : MIO_PIN_63 @ 0XFF1800FC
+
+    * Level 0 Mux Select 0= Level 1 Mux Output 1= gem2, Input, gem2_rgmii_rx_c
+    * tl- (RX RGMII control )
+    *  PSU_IOU_SLCR_MIO_PIN_63_L0_SEL                              0
+
+    * Level 1 Mux Select 0= Level 2 Mux Output 1= usb0, Input, usb0_ulpi_rx_da
+    * ta[7]- (ULPI data bus) 1= usb0, Output, usb0_ulpi_tx_data[7]- (ULPI data
+    *  bus)
+    *  PSU_IOU_SLCR_MIO_PIN_63_L1_SEL                              0
+
+    * Level 2 Mux Select 0= Level 3 Mux Output 1= Not Used 2= Not Used 3= Not
+    * Used
+    *  PSU_IOU_SLCR_MIO_PIN_63_L2_SEL                              0
+
+    * Level 3 Mux Select 0= gpio2, Input, gpio_2_pin_in[11]- (GPIO bank 2) 0=
+    * gpio2, Output, gpio_2_pin_out[11]- (GPIO bank 2) 1= can0, Output, can0_p
+    * hy_tx- (Can TX signal) 2= i2c0, Input, i2c0_sda_input- (SDA signal) 2= i
+    * 2c0, Output, i2c0_sda_out- (SDA signal) 3= swdt0, Output, swdt0_rst_out-
+    *  (Watch Dog Timer Output clock) 4= spi1, Output, spi1_mo- (MOSI signal)
+    * 4= spi1, Input, spi1_si- (MOSI signal) 5= ttc0, Output, ttc0_wave_out- (
+    * TTC Waveform Clock) 6= ua0, Output, ua0_txd- (UART transmitter serial ou
+    * tput) 7= trace, Output, tracedq[9]- (Trace Port Databus)
+    *  PSU_IOU_SLCR_MIO_PIN_63_L3_SEL                              0
+
+    * Configures MIO Pin 63 peripheral interface mapping
+    * (OFFSET, MASK, VALUE)      (0XFF1800FC, 0x000000FEU ,0x00000000U)
+    */
+	PSU_Mask_Write(IOU_SLCR_MIO_PIN_63_OFFSET, 0x000000FEU, 0x00000000U);
+/*##################################################################### */
+
+    /*
     * Register : MIO_PIN_64 @ 0XFF180100
 
     * Level 0 Mux Select 0= Level 1 Mux Output 1= gem3, Output, gem3_rgmii_tx_
@@ -12532,12 +12910,12 @@ unsigned long psu_mio_init_data(void)
     * 2c1, Output, i2c1_scl_out- (SCL signal) 3= mdio0, Output, gem0_mdc- (MDI
     * O Clock) 4= mdio1, Output, gem1_mdc- (MDIO Clock) 5= mdio2, Output, gem2
     * _mdc- (MDIO Clock) 6= mdio3, Output, gem3_mdc- (MDIO Clock) 7= Not Used
-    *  PSU_IOU_SLCR_MIO_PIN_76_L3_SEL                              6
+    *  PSU_IOU_SLCR_MIO_PIN_76_L3_SEL                              0
 
     * Configures MIO Pin 76 peripheral interface mapping
-    * (OFFSET, MASK, VALUE)      (0XFF180130, 0x000000FEU ,0x000000C0U)
+    * (OFFSET, MASK, VALUE)      (0XFF180130, 0x000000FEU ,0x00000000U)
     */
-	PSU_Mask_Write(IOU_SLCR_MIO_PIN_76_OFFSET, 0x000000FEU, 0x000000C0U);
+	PSU_Mask_Write(IOU_SLCR_MIO_PIN_76_OFFSET, 0x000000FEU, 0x00000000U);
 /*##################################################################### */
 
     /*
@@ -12562,12 +12940,12 @@ unsigned long psu_mio_init_data(void)
     * = mdio2, Input, gem2_mdio_in- (MDIO Data) 5= mdio2, Output, gem2_mdio_ou
     * t- (MDIO Data) 6= mdio3, Input, gem3_mdio_in- (MDIO Data) 6= mdio3, Outp
     * ut, gem3_mdio_out- (MDIO Data) 7= Not Used
-    *  PSU_IOU_SLCR_MIO_PIN_77_L3_SEL                              6
+    *  PSU_IOU_SLCR_MIO_PIN_77_L3_SEL                              0
 
     * Configures MIO Pin 77 peripheral interface mapping
-    * (OFFSET, MASK, VALUE)      (0XFF180134, 0x000000FEU ,0x000000C0U)
+    * (OFFSET, MASK, VALUE)      (0XFF180134, 0x000000FEU ,0x00000000U)
     */
-	PSU_Mask_Write(IOU_SLCR_MIO_PIN_77_OFFSET, 0x000000FEU, 0x000000C0U);
+	PSU_Mask_Write(IOU_SLCR_MIO_PIN_77_OFFSET, 0x000000FEU, 0x00000000U);
 /*##################################################################### */
 
     /*
@@ -12740,16 +13118,16 @@ unsigned long psu_mio_init_data(void)
     *  PSU_IOU_SLCR_MIO_MST_TRI1_PIN_51_TRI                        0
 
     * Master Tri-state Enable for pin 52, active high
-    *  PSU_IOU_SLCR_MIO_MST_TRI1_PIN_52_TRI                        1
+    *  PSU_IOU_SLCR_MIO_MST_TRI1_PIN_52_TRI                        0
 
     * Master Tri-state Enable for pin 53, active high
-    *  PSU_IOU_SLCR_MIO_MST_TRI1_PIN_53_TRI                        1
+    *  PSU_IOU_SLCR_MIO_MST_TRI1_PIN_53_TRI                        0
 
     * Master Tri-state Enable for pin 54, active high
     *  PSU_IOU_SLCR_MIO_MST_TRI1_PIN_54_TRI                        0
 
     * Master Tri-state Enable for pin 55, active high
-    *  PSU_IOU_SLCR_MIO_MST_TRI1_PIN_55_TRI                        1
+    *  PSU_IOU_SLCR_MIO_MST_TRI1_PIN_55_TRI                        0
 
     * Master Tri-state Enable for pin 56, active high
     *  PSU_IOU_SLCR_MIO_MST_TRI1_PIN_56_TRI                        0
@@ -12776,10 +13154,10 @@ unsigned long psu_mio_init_data(void)
     *  PSU_IOU_SLCR_MIO_MST_TRI1_PIN_63_TRI                        0
 
     * MIO pin Tri-state Enables, 63:32
-    * (OFFSET, MASK, VALUE)      (0XFF180208, 0xFFFFFFFFU ,0x00B03000U)
+    * (OFFSET, MASK, VALUE)      (0XFF180208, 0xFFFFFFFFU ,0x00003000U)
     */
 	PSU_Mask_Write(IOU_SLCR_MIO_MST_TRI1_OFFSET,
-		0xFFFFFFFFU, 0x00B03000U);
+		0xFFFFFFFFU, 0x00003000U);
 /*##################################################################### */
 
     /*
