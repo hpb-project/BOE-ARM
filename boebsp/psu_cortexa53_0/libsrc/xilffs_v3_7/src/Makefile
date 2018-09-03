@@ -33,7 +33,7 @@
 COMPILER=
 ARCHIVER=
 CP=cp
-COMPILER_FLAGS =
+COMPILER_FLAGS = -g
 LIB=libxilffs.a
 
 ifeq ($(notdir $(COMPILER)) , iccarm)

@@ -11,5 +11,5 @@ TVersion gVersion = {
 		.H = 0x11,
 		.M = 0,
 		.F = 0,
-		.D = 0
+		.D = 1
 };
