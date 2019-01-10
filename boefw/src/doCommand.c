@@ -14,6 +14,8 @@
 #include "atimer.h"
 #include "at508.h"
 #include "emac_oper.h"
+
+#define FPGA_VERSION_REG (0xa0000004)    // value format: 0x00010901 v1.9.1
 static u8 gEmpty256[32] = {0};
 static u8 CmdBfr[8];
 
@@ -154,8 +156,9 @@ static int checkVersion(A_Package *p)
 	u8 nmVer = GetMVersion(p);
 	u8 nfVer = GetFVersion(p);
 	u8 ndVer = GetDVersion(p);
-	if(vMajor(nhVer) == vMajor(gVersion.H)
-			&& vMinor(nhVer) >= vMinor(gVersion.H))
+
+	if((vMajor(nhVer) == vMajor(gVersion.H))
+			&& (vMinor(nhVer) >= vMinor(gVersion.H)))
 	{
 		u32 nvcnt = nmVer << 16 | nfVer << 8 | ndVer;
 		u32 ovcnt = gVersion.M << 16 | gVersion.F << 8 | gVersion.D;
