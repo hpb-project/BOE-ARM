@@ -114,6 +114,14 @@ static int make_response_reg_read(A_Package *req, ACmd cmd, u32 val, A_Package *
     axu_finish_package(p);
     return 0;
 }
+static int make_response_random_read(A_Package *req, ACmd cmd, unsigned char val[64], A_Package *p)
+{
+
+    axu_package_init(p, req, cmd);
+    axu_set_data(p, 0, (u8 *)val, 64);
+    axu_finish_package(p);
+    return 0;
+}
 
 
 int make_response_error(A_Package *req, ACmd cmd, u8 err_code, char*err_info, int len, A_Package *p)
@@ -649,6 +657,45 @@ static PRET doReadReg(A_Package *p, A_Package *res)
 
     return PRET_OK;
 }
+// vcc make random
+unsigned char g_random[64] = {0};
+void hash_random_get()
+{
+	u8  temp = 0;
+	u8  sum = 0;
+	u32 val = 0;
+	u32 i = 0;
+	u32 j = 0;
+
+	u32 reg = 0xffa50804;//vcc reg
+	
+	memset(g_random, 0, 64);
+	for(i = 0; i < 32; i ++)
+	{
+		temp = 0;
+		sum = 0;
+		for(j = 0; j < 8; j++)
+		{
+			val = Xil_In32(reg);
+			temp = val & 0x1;
+			sum = (temp << (7 - j)) | sum;
+			usleep(500);//mast,or error
+		}		
+		sprintf(g_random,"%s%02x",g_random, sum&0xff);	
+	}
+}
+
+static PRET doReadRandomReg(A_Package *p, A_Package *res)
+{
+	if(0 == strlen(g_random))
+	{
+		hash_random_get();
+	}
+	make_response_random_read(p, ACMD_BP_RES_ACK, g_random, res);
+
+    return PRET_OK;
+
+}
 
 #if 0
 static PRET doGetHWVer(A_Package *p, A_Package *res)
@@ -968,6 +1015,8 @@ Processor gCmdProcess[ACMD_END] = {
 		[ACMD_PB_PHY_SHD_WRITE]		= {ACMD_PB_PHY_SHD_WRITE, NULL, doWritePhyShdReg},
 		[ACMD_PB_REG_WRITE]		= {ACMD_PB_REG_WRITE, NULL, doWriteReg},
 		[ACMD_PB_REG_READ]		= {ACMD_PB_REG_READ, NULL, doReadReg},
+		
+		[ACMD_PB_REG_RANDOM]		= {ACMD_PB_REG_RANDOM, NULL, doReadRandomReg},
 
 };
 

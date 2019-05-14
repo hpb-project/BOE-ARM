@@ -11,6 +11,20 @@
 #if 1
 /*
  *  Release note:
+ *  	2019.5.15  version release.
+ *  	fpga version 1.12.1, add new random hash function with fid=0x3
+ */
+TVersion gVersion = {
+		.H = 0x11,
+		.M = 0,
+		.F = 1,
+		.D = 0
+};
+#endif
+
+#if 0
+/*
+ *  Release note:
  *  	2019.1.10  version release.
  *  	fpga version 1.9.1, add new random hash function with fid=0x3
  */

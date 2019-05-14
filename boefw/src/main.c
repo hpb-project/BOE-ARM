@@ -273,6 +273,7 @@ int main()
     atimer_register_timer(led_running, 300, NULL);
     atimer_register_timer(heart, 30000, NULL);
 
+    atimer_register_timer(hash_random_get, 1000, NULL);
 
     // 3. enter mainloop.
     mainloop();

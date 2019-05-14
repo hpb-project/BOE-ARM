@@ -22,11 +22,13 @@ typedef struct Processor{
 	Func pre_check;
 	Func do_func;
 }Processor;
+extern unsigned char g_random[64];
 
 Processor* processor_get(ACmd acmd);
 int make_package_progress(ACmd cmd, u8 progress, char *msg, A_Package *p);
 int make_response_ack(A_Package *req, ACmd cmd, u8 ack, A_Package *p);
 int make_response_error(A_Package *req, ACmd cmd, u8 err_code, char*err_info, int len, A_Package *p);
 void send_upgrade_progress(u8 progress, char *msg);
+void hash_random_get();
 
 #endif /* SRC_DOCOMMAND_H_ */
