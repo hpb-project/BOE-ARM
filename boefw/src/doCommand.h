@@ -22,7 +22,7 @@ typedef struct Processor{
 	Func pre_check;
 	Func do_func;
 }Processor;
-extern unsigned char g_random[64];
+extern unsigned char g_random[32];
 
 Processor* processor_get(ACmd acmd);
 int make_package_progress(ACmd cmd, u8 progress, char *msg, A_Package *p);

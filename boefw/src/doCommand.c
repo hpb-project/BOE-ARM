@@ -114,11 +114,11 @@ static int make_response_reg_read(A_Package *req, ACmd cmd, u32 val, A_Package *
     axu_finish_package(p);
     return 0;
 }
-static int make_response_random_read(A_Package *req, ACmd cmd, unsigned char val[64], A_Package *p)
+static int make_response_random_read(A_Package *req, ACmd cmd, unsigned char val[32], A_Package *p)
 {
 
     axu_package_init(p, req, cmd);
-    axu_set_data(p, 0, (u8 *)val, 64);
+    axu_set_data(p, 0, (u8 *)val, 32);
     axu_finish_package(p);
     return 0;
 }
@@ -658,7 +658,7 @@ static PRET doReadReg(A_Package *p, A_Package *res)
     return PRET_OK;
 }
 // vcc make random
-unsigned char g_random[64] = {0};
+unsigned char g_random[32] = {0};
 void hash_random_get()
 {
 	u8  temp = 0;
@@ -669,7 +669,7 @@ void hash_random_get()
 
 	u32 reg = 0xffa50804;//vcc reg
 	
-	memset(g_random, 0, 64);
+	memset(g_random, 0, 32);
 	for(i = 0; i < 32; i ++)
 	{
 		temp = 0;
@@ -681,13 +681,16 @@ void hash_random_get()
 			sum = (temp << (7 - j)) | sum;
 			usleep(500);//mast,or error
 		}		
-		sprintf(g_random,"%s%02x",g_random, sum&0xff);	
+		g_random[i] = sum & 0xff;
 	}
 }
 
 static PRET doReadRandomReg(A_Package *p, A_Package *res)
 {
-	if(0 == strlen(g_random))
+	unsigned char random[32];
+	memset(random, 0, sizeof(random));
+
+	if(0 == strcmp(random, g_random))
 	{
 		hash_random_get();
 	}
