@@ -32,6 +32,7 @@ static u64 pro_st, pro_so;
 
 static void doMultiBoot(u32 Addr)
 {
+printf("doMultiBoot Addr %d \n",Addr);
     GoMultiBoot(Addr/0x8000);
 }
 
@@ -687,12 +688,25 @@ void hash_random_get()
 
 static PRET doReadRandomReg(A_Package *p, A_Package *res)
 {
-	unsigned char random[32];
-	memset(random, 0, sizeof(random));
-
-	if(0 == strcmp(random, g_random))
-	{
-		hash_random_get();
+	unsigned char random_error[32];
+	unsigned char random_fail[32];
+	
+	memset(random_error, 0x00, sizeof(random_error));
+	memset(random_fail, 0xff, sizeof(random_fail));
+	
+	if((0 == strcmp(random_error, g_random)) || (0 == strcmp(random_fail, g_random)))
+	{		
+		int status = at508_get_random(g_random, sizeof(g_random));
+		
+		printf("at508_get_random\n ");
+		if(status != PRET_OK)
+		{
+			for(int i = 0; i < 8; i++)
+			{
+				u32 r = genrandom();
+				memcpy(&g_random[i*4], &r, sizeof(r));
+			}
+		}
 	}
 	make_response_random_read(p, ACMD_BP_RES_ACK, g_random, res);
 
