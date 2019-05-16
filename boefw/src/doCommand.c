@@ -696,9 +696,7 @@ static PRET doReadRandomReg(A_Package *p, A_Package *res)
 	
 	if((0 == strcmp(random_error, g_random)) || (0 == strcmp(random_fail, g_random)))
 	{		
-		int status = at508_get_random(g_random, sizeof(g_random));
-		
-		printf("at508_get_random\n ");
+		int status = at508_get_random(g_random, sizeof(g_random));		
 		if(status != PRET_OK)
 		{
 			for(int i = 0; i < 8; i++)
